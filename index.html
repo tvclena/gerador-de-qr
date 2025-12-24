@@ -6,29 +6,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"></script>
 
 <style>
 body{
   margin:0;
   font-family:Inter,Arial,sans-serif;
-  background:linear-gradient(135deg,#020617,#020617);
+  background:#020617;
   height:100vh;
   display:flex;
-  justify-content:center;
   align-items:center;
+  justify-content:center;
   color:#fff;
 }
 .card{
-  background:#020617;
-  border-radius:20px;
-  padding:30px;
   width:380px;
+  background:#020617;
+  padding:30px;
+  border-radius:20px;
   box-shadow:0 20px 60px rgba(0,0,0,.6);
-}
-h2{
-  margin-top:0;
-  text-align:center;
 }
 input,button{
   width:100%;
@@ -38,22 +33,11 @@ input,button{
   margin-top:12px;
   font-size:15px;
 }
-input{
-  background:#0f172a;
-  color:#fff;
-}
+input{background:#0f172a;color:#fff}
 button{
   background:#22c55e;
   font-weight:700;
   cursor:pointer;
-}
-button:hover{
-  opacity:.9;
-}
-small{
-  color:#94a3b8;
-  display:block;
-  margin-top:6px;
 }
 #qrcode{
   margin-top:20px;
@@ -62,14 +46,10 @@ small{
 }
 .url{
   font-size:12px;
-  margin-top:8px;
+  margin-top:10px;
   word-break:break-all;
   color:#94a3b8;
   text-align:center;
-}
-.loading{
-  opacity:.6;
-  pointer-events:none;
 }
 </style>
 </head>
@@ -79,25 +59,21 @@ small{
 <div class="card">
   <h2>Gerador de QR Code</h2>
 
-  <input id="nome" placeholder="Nome do QR (ex: Poste Central)">
+  <input id="nome" placeholder="Nome do QR">
   <input id="slug" placeholder="Slug (ex: cadastro)">
-  <input id="destino" placeholder="URL de destino (https://...)">
+  <input id="destino" placeholder="https://...">
 
-  <button id="btn" onclick="gerar()">Gerar QR</button>
+  <button onclick="gerar()">Gerar QR</button>
 
   <div id="qrcode"></div>
   <div class="url" id="finalUrl"></div>
 </div>
 
-<script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+<script>
+const CREATE_URL =
+  "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
 
-const SUPABASE_URL = "https://fcehmjmtxqmrjkuqlkay.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-const BASE_REDIRECT =
+const REDIRECT_BASE =
   "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
 
 async function gerar(){
@@ -106,52 +82,35 @@ async function gerar(){
   const destino = destinoEl.value.trim();
 
   if(!nome || !slug || !destino){
-    alert("Preencha todos os campos");
+    alert("Preencha tudo");
     return;
   }
 
-  if(slug.includes("/") || slug.includes("http")){
-    alert("Slug inválido. Use apenas letras e números.");
-    return;
-  }
-
-  btn.classList.add("loading");
-  btn.innerText = "Gerando...";
-
-  const { error } = await supabase
-    .from("qr_codes")
-    .insert([{ nome, slug, destino }]);
-
-  if(error){
-    btn.classList.remove("loading");
-    btn.innerText = "Gerar QR";
-    alert("Erro: slug já existe ou destino inválido");
-    return;
-  }
-
-  const final = BASE_REDIRECT + slug;
-
-  qrcode.innerHTML = "";
-  new QRCode(qrcode,{
-    text: final,
-    width:260,
-    height:260
+  const res = await fetch(CREATE_URL,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ nome, slug, destino })
   });
 
-  finalUrl.innerText = final;
+  const json = await res.json();
 
-  btn.classList.remove("loading");
-  btn.innerText = "Gerar QR";
+  if(!res.ok){
+    alert(json.error || "Erro ao cadastrar");
+    return;
+  }
+
+  const final = REDIRECT_BASE + slug;
+
+  qrcode.innerHTML = "";
+  new QRCode(qrcode,{ text: final, width:260, height:260 });
+  finalUrl.innerText = final;
 }
 
 const nomeEl = document.getElementById("nome");
 const slugEl = document.getElementById("slug");
 const destinoEl = document.getElementById("destino");
-const btn = document.getElementById("btn");
 const qrcode = document.getElementById("qrcode");
 const finalUrl = document.getElementById("finalUrl");
-
-window.gerar = gerar;
 </script>
 
 </body>
