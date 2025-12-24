@@ -2,243 +2,212 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Clena • QR Manager</title>
+<title>Gerador de QR Code</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
-:root{
-  --bg:#0f0f10;
-  --surface:#1b1b1e;
-  --card:#232326;
-  --accent:#22c55e;
-  --danger:#e50914;
-  --text:#fff;
-  --muted:#b5b5b5;
-}
-
-*{margin:0;padding:0;box-sizing:border-box}
+*{box-sizing:border-box;font-family:Inter,Arial}
 body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:Inter,Arial,sans-serif;
+  background:radial-gradient(circle at top,#0b132b,#000);
+  min-height:100vh;
+  margin:0;
+  padding:30px;
+  color:#fff;
+}
+h1{text-align:center;margin-bottom:24px}
+
+.card{
+  max-width:980px;
+  margin:auto;
+  background:#0f172a;
+  border-radius:18px;
+  padding:28px;
+  box-shadow:0 0 40px rgba(0,0,0,.6);
 }
 
-/* HEADER */
-header{
-  position:fixed;
-  top:0;left:0;right:0;
-  height:64px;
-  display:flex;
-  align-items:center;
-  padding:0 32px;
-  background:linear-gradient(to bottom,rgba(0,0,0,.9),rgba(0,0,0,.4),transparent);
-  z-index:100;
+form{
+  display:grid;
+  grid-template-columns:1fr 2fr auto;
+  gap:12px;
+  margin-bottom:30px;
 }
-.logo{
-  font-size:22px;
-  font-weight:800;
-}
-.logo span{color:var(--accent)}
-header button{
-  margin-left:auto;
-  padding:10px 18px;
+
+input{
+  padding:12px;
+  border-radius:10px;
   border:none;
-  border-radius:999px;
-  background:var(--accent);
+  font-size:15px;
+}
+
+button{
+  padding:12px 18px;
+  border-radius:10px;
+  border:none;
+  background:#22c55e;
   color:#000;
   font-weight:700;
   cursor:pointer;
 }
 
-/* MAIN */
-main{
-  padding:100px 40px 60px;
-}
-h2{margin-bottom:20px}
-
-/* GRID */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
   gap:20px;
 }
-.card{
-  background:var(--card);
+
+.qr-card{
+  background:#020617;
   border-radius:14px;
-  padding:16px;
+  padding:14px;
   transition:.25s;
 }
-.card:hover{
-  transform:scale(1.05);
-  box-shadow:0 20px 40px rgba(0,0,0,.6);
+.qr-card:hover{
+  transform:scale(1.04);
 }
-.card img{
+
+.qr-card img{
   width:100%;
+  background:#fff;
   border-radius:10px;
-  margin-bottom:12px;
-}
-.card h4{margin-bottom:6px}
-.card .meta{
-  font-size:13px;
-  color:var(--muted);
   margin-bottom:10px;
 }
-.card .acoes{
-  display:flex;
-  gap:10px;
+
+.qr-card h4{margin:6px 0}
+.meta{
+  font-size:13px;
+  color:#94a3b8;
+  margin-bottom:10px;
 }
-.card .acoes button{
+
+.actions{
+  display:flex;
+  gap:8px;
+}
+.actions button{
   flex:1;
   padding:8px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:600;
+  font-size:13px;
 }
-.btn-del{background:var(--danger);color:#fff}
-.btn-dl{background:#333;color:#fff}
-
-/* MODAL */
-#modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.75);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:500;
-}
-#modalBox{
-  background:var(--surface);
-  padding:26px;
-  border-radius:18px;
-  width:360px;
-}
-#modalBox h3{margin-bottom:14px}
-#modalBox input{
-  width:100%;
-  padding:12px;
-  margin-bottom:10px;
-  border-radius:8px;
-  border:1px solid #333;
-  background:#111;
-  color:#fff;
-}
-#modalBox button{
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  background:var(--accent);
-  font-weight:700;
-  cursor:pointer;
-}
+.btn-del{background:#e50914;color:#fff}
+.btn-open{background:#334155;color:#fff}
 </style>
 </head>
 
 <body>
 
-<header>
-  <div class="logo">CLENA <span>QR</span></div>
-  <button onclick="abrirModal()">+ Novo QR</button>
-</header>
+<h1>📲 Gerador de QR Code</h1>
 
-<main>
-  <h2>Meus QR Codes</h2>
-  <div class="grid" id="lista"></div>
-</main>
+<div class="card">
 
-<!-- MODAL -->
-<div id="modal">
-  <div id="modalBox">
-    <h3>Novo QR Code</h3>
+  <form id="qrForm">
     <input id="nome" placeholder="Nome do QR">
     <input id="destino" placeholder="URL de destino">
-    <button onclick="criarQR()">Criar QR</button>
-  </div>
+    <button type="submit">Gerar</button>
+  </form>
+
+  <div class="grid" id="lista"></div>
+
 </div>
 
 <script>
-/* ===== CONFIG ===== */
-const SUPABASE_URL = "https://SEU-PROJETO.supabase.co";
-const SUPABASE_ANON_KEY = "SUA-ANON-KEY";
+const API_CREATE =
+  "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
+const API_REDIRECT =
+  "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const lista = document.getElementById("lista");
+const form = document.getElementById("qrForm");
 
-/* ===== MODAL ===== */
-function abrirModal(){ modal.style.display="flex"; }
-modal.onclick = e => { if(e.target.id==="modal") modal.style.display="none"; };
-
-/* ===== UTIL ===== */
-function randomCode(){
-  return Math.random().toString(36).substring(2,8);
+function gerarSlug(){
+  return Math.random().toString(36).substring(2,10);
 }
 
-/* ===== CRIAR QR ===== */
-async function criarQR(){
+form.addEventListener("submit", async e=>{
+  e.preventDefault();
+
   const nome = document.getElementById("nome").value.trim();
   const destino = document.getElementById("destino").value.trim();
   if(!nome || !destino) return alert("Preencha tudo");
 
-  const slug = randomCode();
-  const fileName = `${nome.replace(/\s+/g,"-")}_${slug}.png`;
+  const slug = gerarSlug();
 
+  // gera QR em canvas
   const canvas = document.createElement("canvas");
-  await QRCode.toCanvas(canvas, destino, { width:512 });
+  await QRCode.toCanvas(canvas, API_REDIRECT + slug, { width:512 });
 
-  const blob = await new Promise(r=>canvas.toBlob(r,"image/png"));
+  const imgBase64 = canvas.toDataURL("image/png");
 
-  await sb.storage.from("qr-codes").upload(fileName, blob);
-
-  const { data:url } = sb.storage.from("qr-codes").getPublicUrl(fileName);
-
-  await sb.from("qr_codes").insert({
-    nome, slug, destino,
-    imagem_url: url.publicUrl,
-    acessos:0,
-    ativo:true
+  const res = await fetch(API_CREATE,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ nome, slug, destino, image: imgBase64 })
   });
 
-  modal.style.display="none";
+  if(!res.ok){
+    alert("Erro ao criar QR");
+    return;
+  }
+
+  document.getElementById("nome").value="";
+  document.getElementById("destino").value="";
   carregar();
-}
+});
 
-/* ===== LISTAR ===== */
 async function carregar(){
-  const { data } = await sb
-    .from("qr_codes")
-    .select("*")
-    .eq("ativo", true)
-    .order("created_at",{ascending:false});
+  const res = await fetch(
+    "https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes?ativo=eq.true&order=criado_em.desc",
+    {
+      headers:{
+        apikey:"sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
+      }
+    }
+  );
 
-  lista.innerHTML = "";
+  const data = await res.json();
+  lista.innerHTML="";
 
   data.forEach(q=>{
     lista.innerHTML += `
-      <div class="card">
+      <div class="qr-card">
         <img src="${q.imagem_url}">
         <h4>${q.nome}</h4>
         <div class="meta">
-          Criado em ${new Date(q.created_at).toLocaleDateString("pt-BR")}<br>
-          Acessos: ${q.acessos}
+          Slug: ${q.slug}<br>
+          Acessos: ${q.acessos}<br>
+          ${new Date(q.criado_em).toLocaleDateString("pt-BR")}
         </div>
-        <div class="acoes">
-          <button class="btn-dl" onclick="window.open('${q.imagem_url}')">Baixar</button>
-          <button class="btn-del" onclick="excluir('${q.id}')">Excluir</button>
+        <div class="actions">
+          <button class="btn-open"
+            onclick="window.open('${API_REDIRECT + q.slug}')">
+            Abrir
+          </button>
+          <button class="btn-del"
+            onclick="excluir('${q.id}')">
+            Excluir
+          </button>
         </div>
       </div>
     `;
   });
 }
 
-/* ===== EXCLUIR ===== */
 async function excluir(id){
-  if(!confirm("Excluir este QR?")) return;
-  await sb.from("qr_codes").update({ativo:false}).eq("id",id);
+  if(!confirm("Excluir QR?")) return;
+
+  await fetch(
+    "https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes?id=eq."+id,
+    {
+      method:"PATCH",
+      headers:{
+        apikey:"sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o",
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({ ativo:false })
+    }
+  );
+
   carregar();
 }
 
