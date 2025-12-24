@@ -5,27 +5,36 @@ const SUPABASE_URL = "https://fcehmjmtxqmrjkuqlkay.supabase.co"
 const SERVICE_ROLE_KEY = "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
 
 serve(async (req) => {
-  const slug = req.url.split("/").pop()
+  try{
+    const slug = req.url.split("/").pop()
 
-  const supabase = createClient(
-    SUPABASE_URL,
-    SERVICE_ROLE_KEY
-  )
+    if(!slug) {
+      return new Response("Slug inválido",{status:400})
+    }
 
-  const { data } = await supabase
-    .from("qr_codes")
-    .select("*")
-    .eq("slug", slug)
-    .single()
+    const supabase = createClient(
+      SUPABASE_URL,
+      SERVICE_ROLE_KEY
+    )
 
-  if (!data) {
-    return new Response("QR inválido", { status: 404 })
+    const { data, error } = await supabase
+      .from("qr_codes")
+      .select("*")
+      .eq("slug", slug)
+      .single()
+
+    if(error || !data){
+      return new Response("QR inválido",{status:404})
+    }
+
+    await supabase
+      .from("qr_codes")
+      .update({ acessos: data.acessos + 1 })
+      .eq("id", data.id)
+
+    return Response.redirect(data.destino, 302)
+
+  }catch{
+    return new Response("Erro interno",{status:500})
   }
-
-  await supabase
-    .from("qr_codes")
-    .update({ acessos: data.acessos + 1 })
-    .eq("id", data.id)
-
-  return Response.redirect(data.destino, 302)
 })
