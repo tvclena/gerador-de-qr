@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerador de QR Code</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- QRCode lib -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+
+  <!-- Supabase -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"></script>
+
+  <style>
+    body {
+      font-family: Inter, Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 30px;
+      color: #222;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 25px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.05);
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 15px;
+    }
+
+    button {
+      background: #0066ff;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button:hover {
+      opacity: .9;
+    }
+
+    #qrcode {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background: #fafafa;
+    }
+
+    a {
+      color: #0066ff;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .slug {
+      font-family: monospace;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>📲 Gerador de QR Code</h1>
+
+<div class="card">
+  <h3>Criar novo QR</h3>
+
+  <input id="nome" placeholder="Nome do QR (ex: Poste Av Central)">
+  <input id="destino" placeholder="Link de destino (https://...)">
+
+  <button onclick="gerarQR()">Gerar QR Code</button>
+
+  <div id="qrcode"></div>
+</div>
+
+<div class="card">
+  <h3>QR Codes Gerados</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Link</th>
+        <th>Slug</th>
+        <th>Acessos</th>
+      </tr>
+    </thead>
+    <tbody id="lista"></tbody>
+  </table>
+</div>
+
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+  const SUPABASE_URL = "https://SEU-PROJETO.supabase.co"
+  const SUPABASE_ANON_KEY = "SUA_ANON_KEY"
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  const BASE_QR_URL = "https://SEU-PROJETO.supabase.co/functions/v1/r/"
+
+  async function gerarQR() {
+    const nome = document.getElementById('nome').value.trim()
+    const destino = document.getElementById('destino').value.trim()
+
+    if (!nome || !destino) {
+      alert("Preencha nome e link")
+      return
+    }
+
+    const slug = Math.random().toString(36).substring(2, 8)
+
+    const { error } = await supabase.from("qr_codes").insert([
+      { nome, destino, slug }
+    ])
+
+    if (error) {
+      alert("Erro ao salvar")
+      return
+    }
+
+    const urlFinal = BASE_QR_URL + slug
+
+    document.getElementById("qrcode").innerHTML = ""
+    new QRCode(document.getElementById("qrcode"), {
+      text: urlFinal,
+      width: 180,
+      height: 180
+    })
+
+    document.getElementById("nome").value = ""
+    document.getElementById("destino").value = ""
+
+    carregarLista()
+  }
+
+  async function carregarLista() {
+    const { data } = await supabase
+      .from("qr_codes")
+      .select("*")
+      .order("criado_em", { ascending: false })
+
+    const tbody = document.getElementById("lista")
+    tbody.innerHTML = ""
+
+    data.forEach(qr => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${qr.nome}</td>
+          <td><a href="${qr.destino}" target="_blank">Destino</a></td>
+          <td class="slug">${qr.slug}</td>
+          <td>${qr.acessos}</td>
+        </tr>
+      `
+    })
+  }
+
+  carregarLista()
+</script>
+
+</body>
+</html>
