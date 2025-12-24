@@ -1,121 +1,84 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>Gerador de QR Code</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<title>Gerador de QR Code</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <style>
-    body {
-      font-family: Inter, Arial, sans-serif;
-      background: #0f172a;
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    .box {
-      background: #020617;
-      padding: 30px;
-      border-radius: 14px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.4);
-    }
-
-    h1 {
-      margin-top: 0;
-      text-align: center;
-      font-size: 22px;
-    }
-
-    label {
-      font-size: 14px;
-      display: block;
-      margin-top: 20px;
-      margin-bottom: 6px;
-      color: #cbd5f5;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      border: none;
-      outline: none;
-      font-size: 15px;
-    }
-
-    button {
-      margin-top: 20px;
-      width: 100%;
-      padding: 14px;
-      border-radius: 10px;
-      border: none;
-      font-size: 16px;
-      background: #22c55e;
-      color: #022c22;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .qr {
-      margin-top: 30px;
-      text-align: center;
-    }
-
-    img {
-      background: #fff;
-      padding: 12px;
-      border-radius: 12px;
-    }
-
-    .url {
-      margin-top: 10px;
-      font-size: 13px;
-      word-break: break-all;
-      color: #94a3b8;
-    }
-  </style>
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background:#0f172a;
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.box{
+  background:#020617;
+  padding:30px;
+  border-radius:16px;
+  width:360px;
+  text-align:center;
+}
+input,button{
+  width:100%;
+  padding:14px;
+  border-radius:10px;
+  border:none;
+  margin-top:14px;
+}
+button{
+  background:#22c55e;
+  font-weight:bold;
+  cursor:pointer;
+}
+img{
+  margin-top:20px;
+  background:#fff;
+  padding:10px;
+  border-radius:12px;
+}
+small{
+  color:#94a3b8;
+  display:block;
+  margin-top:8px;
+  word-break:break-all;
+}
+</style>
 </head>
+
 <body>
+<div class="box">
+  <h2>Gerador de QR Code</h2>
 
-  <div class="box">
-    <h1>Gerador de QR Code</h1>
+  <input id="slug" placeholder="Ex: cadastro" />
 
-    <label>Slug do QR</label>
-    <input id="slug" placeholder="ex: acesse-ja" />
+  <button onclick="gerar()">Gerar QR</button>
 
-    <button onclick="gerar()">Gerar QR</button>
+  <div id="res"></div>
+</div>
 
-    <div class="qr" id="resultado"></div>
-  </div>
+<script>
+const BASE =
+  "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
 
-  <script>
-    const BASE_URL =
-      "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
+function gerar(){
+  const slug = document.getElementById("slug").value.trim();
 
-    function gerar() {
-      const slug = document.getElementById("slug").value.trim();
+  if(!slug || slug.includes("http")){
+    alert("Use apenas o SLUG. Ex: cadastro");
+    return;
+  }
 
-      if (!slug) {
-        alert("Informe o slug");
-        return;
-      }
+  const finalUrl = BASE + slug;
 
-      const urlFinal = BASE_URL + slug;
-
-      const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(urlFinal)}`;
-
-      document.getElementById("resultado").innerHTML = `
-        <img src="${qrImg}" />
-        <div class="url">${urlFinal}</div>
-      `;
-    }
-  </script>
-
+  document.getElementById("res").innerHTML = `
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(finalUrl)}">
+    <small>${finalUrl}</small>
+  `;
+}
+</script>
 </body>
 </html>
