@@ -141,7 +141,7 @@ th{
   <h3>Criar novo QR</h3>
   <input id="nome" placeholder="Nome do QR (ex: Poste Av Central)">
   <input id="destino" placeholder="Link de destino (https://...)">
-  <button onclick="gerarQR()">Gerar QR Code</button>
+<button id="btnGerar">Gerar QR Code</button>
   <div id="qrcode"></div>
 </div>
 
@@ -207,6 +207,7 @@ async function gerarQR(){
 
   document.getElementById("nome").value=""
   document.getElementById("destino").value=""
+document.getElementById("btnGerar").addEventListener("click", gerarQR)
 
   await carregarLista()
   hideOverlay()
