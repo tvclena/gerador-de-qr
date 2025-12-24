@@ -14,6 +14,7 @@
   --bg:#f4f6f8;
   --card:#ffffff;
   --text:#1f2937;
+  --danger:#ef4444;
 }
 
 *{box-sizing:border-box}
@@ -26,9 +27,7 @@ body{
   color:var(--text);
 }
 
-h1{
-  margin-bottom:20px;
-}
+h1{margin-bottom:20px}
 
 .card{
   background:var(--card);
@@ -61,12 +60,6 @@ button{
 
 button:hover{opacity:.9}
 
-#qrcode{
-  margin-top:20px;
-  display:flex;
-  justify-content:center;
-}
-
 table{
   width:100%;
   border-collapse:collapse;
@@ -94,30 +87,34 @@ th{
 }
 
 .actions button{
-  padding:6px 10px;
-  font-size:13px;
-  border-radius:6px;
   width:auto;
+  padding:6px 12px;
+  font-size:13px;
 }
 
-.btn-delete{
-  background:#ef4444;
+.btn-delete{background:var(--danger)}
+
+#qrcode{
+  margin-top:20px;
+  display:flex;
+  justify-content:center;
 }
 
+/* OVERLAY */
 .overlay{
   position:fixed;
   inset:0;
-  background:rgba(255,255,255,.8);
+  background:rgba(255,255,255,.85);
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:999;
+  z-index:9999;
 }
 
 .loader{
-  width:50px;
-  height:50px;
-  border:5px solid #ddd;
+  width:52px;
+  height:52px;
+  border:6px solid #ddd;
   border-top-color:var(--primary);
   border-radius:50%;
   animation:spin 1s linear infinite;
@@ -141,7 +138,7 @@ th{
   <h3>Criar novo QR</h3>
   <input id="nome" placeholder="Nome do QR (ex: Poste Av Central)">
   <input id="destino" placeholder="Link de destino (https://...)">
-<button id="btnGerar">Gerar QR Code</button>
+  <button id="btnGerar">Gerar QR Code</button>
   <div id="qrcode"></div>
 </div>
 
@@ -164,86 +161,109 @@ th{
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
+/* CONFIG */
 const SUPABASE_URL = "https://fcehmjmtxqmrjkuqlkay.supabase.co"
 const SUPABASE_ANON_KEY = "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
 const BASE_QR_URL = "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/"
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+/* UI */
 const overlay = document.getElementById("overlay")
+const btnGerar = document.getElementById("btnGerar")
 
-function showOverlay(){ overlay.style.display="flex" }
-function hideOverlay(){ overlay.style.display="none" }
+const showOverlay = () => overlay.style.display = "flex"
+const hideOverlay = () => overlay.style.display = "none"
 
+/* EVENT */
+btnGerar.addEventListener("click", gerarQR)
+
+/* FUNÇÕES */
 async function gerarQR(){
-  const nome = document.getElementById("nome").value.trim()
-  const destino = document.getElementById("destino").value.trim()
+  try{
+    const nome = document.getElementById("nome").value.trim()
+    const destino = document.getElementById("destino").value.trim()
 
-  if(!nome || !destino){
-    alert("Preencha nome e link")
-    return
-  }
+    if(!nome || !destino) throw "Preencha nome e link"
 
-  showOverlay()
+    showOverlay()
 
-  const slug = crypto.randomUUID().slice(0,8)
+    const slug = crypto.randomUUID().slice(0,8)
 
-  const { error } = await supabase.from("qr_codes").insert([
-    { nome, destino, slug }
-  ])
+    const { error } = await supabase
+      .from("qr_codes")
+      .insert([{ nome, destino, slug }])
 
-  if(error){
+    if(error) throw error.message
+
+    document.getElementById("qrcode").innerHTML = ""
+    new QRCode(document.getElementById("qrcode"),{
+      text: BASE_QR_URL + slug,
+      width:180,
+      height:180
+    })
+
+    document.getElementById("nome").value = ""
+    document.getElementById("destino").value = ""
+
+    await carregarLista()
+  }catch(err){
+    alert("Erro: " + err)
+  }finally{
     hideOverlay()
-    alert("Erro ao salvar")
-    return
   }
-
-  document.getElementById("qrcode").innerHTML=""
-  new QRCode(document.getElementById("qrcode"),{
-    text: BASE_QR_URL + slug,
-    width:180,
-    height:180
-  })
-
-  document.getElementById("nome").value=""
-  document.getElementById("destino").value=""
-document.getElementById("btnGerar").addEventListener("click", gerarQR)
-
-  await carregarLista()
-  hideOverlay()
 }
 
 async function excluirQR(id){
   if(!confirm("Excluir este QR? Ele deixará de funcionar.")) return
 
-  showOverlay()
-  await supabase.from("qr_codes").delete().eq("id", id)
-  await carregarLista()
-  hideOverlay()
+  try{
+    showOverlay()
+    const { error } = await supabase
+      .from("qr_codes")
+      .delete()
+      .eq("id", id)
+
+    if(error) throw error.message
+
+    await carregarLista()
+  }catch(err){
+    alert("Erro ao excluir: " + err)
+  }finally{
+    hideOverlay()
+  }
 }
 
 async function carregarLista(){
-  const { data } = await supabase
-    .from("qr_codes")
-    .select("*")
-    .order("criado_em",{ascending:false})
+  try{
+    const { data, error } = await supabase
+      .from("qr_codes")
+      .select("*")
+      .order("criado_em", { ascending:false })
 
-  const tbody = document.getElementById("lista")
-  tbody.innerHTML=""
+    if(error) throw error.message
 
-  data.forEach(qr=>{
-    tbody.innerHTML+=`
-      <tr>
+    const tbody = document.getElementById("lista")
+    tbody.innerHTML = ""
+
+    data.forEach(qr=>{
+      const tr = document.createElement("tr")
+      tr.innerHTML = `
         <td>${qr.nome}</td>
         <td><a href="${qr.destino}" target="_blank">Abrir</a></td>
         <td class="slug">${qr.slug}</td>
         <td>${qr.acessos}</td>
         <td class="actions">
-          <button class="btn-delete" onclick="excluirQR('${qr.id}')">Excluir</button>
+          <button class="btn-delete" data-id="${qr.id}">Excluir</button>
         </td>
-      </tr>
-    `
-  })
+      `
+      tr.querySelector(".btn-delete")
+        .addEventListener("click",()=>excluirQR(qr.id))
+      tbody.appendChild(tr)
+    })
+  }catch(err){
+    alert("Erro ao carregar lista: " + err)
+  }
 }
 
 carregarLista()
