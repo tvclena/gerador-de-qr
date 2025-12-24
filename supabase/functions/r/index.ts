@@ -4,6 +4,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js"
 const SUPABASE_URL = "https://fcehmjmtxqmrjkuqlkay.supabase.co"
 const SERVICE_ROLE_KEY = "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
 
+
+
+
+
+import { serve } from "https://deno.land/std/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js"
+
+const SUPABASE_URL = "https://fcehmjmtxqmrjkuqlkay.supabase.co"
+const SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjZWhtam10eHFtcmprdXFsa2F5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NjYwOTgyMiwiZXhwIjoyMDgyMTg1ODIyfQ.laVuDTJOtjexO-2uQp77bQKn2ketGPoc2dezHSUwFBY"
+
 serve(async (req) => {
   try {
     const url = new URL(req.url)
@@ -35,7 +45,8 @@ serve(async (req) => {
 
     return Response.redirect(data.destino, 302)
 
-  } catch (err) {
+  } catch {
     return new Response("Erro interno", { status: 500 })
   }
 })
+
