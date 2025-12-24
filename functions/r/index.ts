@@ -1,12 +1,15 @@
 import { serve } from "https://deno.land/std/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js"
 
+const SUPABASE_URL = "https://fcehmjmtxqmrjkuqlkay.supabase.co"
+const SERVICE_ROLE_KEY = "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
+
 serve(async (req) => {
   const slug = req.url.split("/").pop()
 
   const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    SUPABASE_URL,
+    SERVICE_ROLE_KEY
   )
 
   const { data } = await supabase
