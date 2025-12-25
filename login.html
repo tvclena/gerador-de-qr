@@ -6,7 +6,7 @@
 
 <meta name="viewport"
   content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<script src="./env.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -239,12 +239,9 @@ input:focus{
 </div>
 
 <script>
-const SUPABASE_URL = window.ENV_SUPABASE_URL;
-const SUPABASE_ANON_KEY = window.ENV_SUPABASE_ANON_KEY;
-
 const sb = supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
+  "https://fcehmjmtxqmrjkuqlkay.supabase.co",
+  "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
 );
 
 /* MODAL */
