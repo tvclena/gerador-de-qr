@@ -209,13 +209,20 @@ form.addEventListener("submit", async e=>{
   const canvas = document.createElement("canvas");
   await QRCode.toCanvas(canvas, API_REDIRECT + slug, { width:512 });
 
-  const image = canvas.toDataURL("image/png");
+const imagem = canvas.toDataURL("image/png");
 
-  const res = await fetch(API_CREATE,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ nome, slug, destino, image })
-  });
+const res = await fetch(API_CREATE,{
+  method:"POST",
+  headers:{ "Content-Type":"application/json" },
+  body:JSON.stringify({
+    nome,
+    slug,
+    destino,
+    imagem // 🔥 agora existe e bate com a Edge Function
+  })
+});
+;
+
 
   if(!res.ok){
     alert("Erro ao criar QR");
