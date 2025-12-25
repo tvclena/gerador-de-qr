@@ -11,11 +11,7 @@
 
 <style>
 *{box-sizing:border-box;font-family:Inter,Arial}
-html,body{
-  margin:0;
-  height:100%;
-  touch-action:manipulation;
-}
+html,body{margin:0;height:100%}
 
 :root{
   --bg:#0b1020;
@@ -48,7 +44,7 @@ body{
   font-size:64px;
   font-weight:900;
   display:flex;
-  gap:10px;
+  gap:8px;
 }
 .splash-logo span{
   background:linear-gradient(135deg,var(--primary),var(--secondary));
@@ -62,17 +58,16 @@ header{
   margin:24px auto;
   padding:0 20px;
   display:flex;
-  gap:14px;
-  flex-wrap:wrap;
   justify-content:space-between;
   align-items:center;
+  gap:12px;
 }
 header h1{margin:0;font-size:26px;font-weight:900}
 
 .right{
   display:flex;
   gap:12px;
-  flex:1;
+  align-items:center;
 }
 
 /* SEARCH */
@@ -80,7 +75,7 @@ header h1{margin:0;font-size:26px;font-weight:900}
   background:#020617;
   border-radius:999px;
   padding:10px 16px;
-  flex:1;
+  width:240px;
 }
 .search input{
   width:100%;
@@ -131,6 +126,7 @@ form button{
   font-weight:800;
   cursor:pointer;
   position:relative;
+  color:#fff;
 }
 
 /* LOADING BUTTON */
@@ -142,6 +138,7 @@ form button{
   border-radius:50%;
   animation:spin 1s linear infinite;
   display:none;
+  margin:auto;
 }
 #btnGerar.loading .btn-spinner{display:block}
 #btnGerar.loading .btn-text{display:none}
@@ -168,20 +165,28 @@ form button{
   background:#fff;
   margin-bottom:12px;
 }
-.meta{font-size:13px;color:var(--muted)}
+.meta{
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:12px;
+  line-height:1.5;
+}
 
+/* ACTIONS */
 .actions{
   display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:10px;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
   margin-top:auto;
 }
 .actions button{
-  height:42px;border:none;border-radius:10px;
-  font-weight:700;cursor:pointer;
+  height:42px;
+  border:none;
+  border-radius:10px;
+  font-weight:700;
+  cursor:pointer;
 }
 .open{background:#334155;color:#fff}
-.copy{background:#eab308;color:#000}
 .edit{background:#22c55e;color:#000}
 .del{background:var(--danger);color:#fff}
 
@@ -201,32 +206,13 @@ form button{
   width:92%;
   max-width:420px;
 }
+.modal-box h3{margin-top:0}
 .modal-box input{
   width:100%;
   padding:12px;
   border-radius:10px;
   border:none;
   margin-bottom:12px;
-}
-
-/* PERFIL */
-.perfil-header{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:10px;
-}
-.perfil-avatar{
-  width:72px;height:72px;
-  border-radius:50%;
-  background:#020617;
-  padding:10px;
-}
-.perfil-info{
-  font-size:14px;
-  color:var(--muted);
-  line-height:1.6;
-  margin:14px 0;
 }
 .modal-actions{
   display:flex;
@@ -244,6 +230,7 @@ form button{
 /* MOBILE */
 @media(max-width:768px){
   form{grid-template-columns:1fr}
+  .search{width:100%}
 }
 </style>
 </head>
@@ -278,13 +265,10 @@ form button{
 <!-- PERFIL -->
 <div class="modal" id="perfilModal">
   <div class="modal-box">
-    <div class="perfil-header">
-      <img src="logo.png" class="perfil-avatar">
-      <h3>Meu perfil</h3>
-    </div>
-    <div class="perfil-info" id="perfilInfo"></div>
+    <h3>Meu perfil</h3>
+    <div id="perfilInfo" class="meta"></div>
     <div class="modal-actions">
-      <button onclick="editarPerfil()">Editar</button>
+      <button onclick="fecharPerfil()">Fechar</button>
       <button style="background:var(--danger)" onclick="logout()">Sair</button>
     </div>
   </div>
@@ -294,8 +278,8 @@ form button{
 <div class="modal" id="editModal">
   <div class="modal-box">
     <h3>Editar QR</h3>
-    <input id="editNome">
-    <input id="editDestino">
+    <input id="editNome" placeholder="Nome">
+    <input id="editDestino" placeholder="Destino">
     <div class="modal-actions">
       <button onclick="fecharEdit()">Cancelar</button>
       <button style="background:var(--success)" onclick="salvarEdit()">Salvar</button>
@@ -304,10 +288,13 @@ form button{
 </div>
 
 <script>
-const usuario=localStorage.getItem("usuario_email");
+const usuario = localStorage.getItem("usuario_email");
 if(!usuario) location.replace("login.html");
 
-setTimeout(()=>{splash.style.display="none";document.body.style.display="block"},1400);
+setTimeout(()=>{
+  splash.style.display="none";
+  document.body.style.display="block";
+},1200);
 
 const API_CREATE="https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
 const API_REDIRECT="https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
@@ -317,23 +304,33 @@ const API_KEY="sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
 
 let dados=[], editId=null;
 
+function gerarSlug(){
+  return Math.random().toString(36).substring(2,10);
+}
+
+/* PERFIL */
 async function abrirPerfil(){
-  const r=await fetch(REST_USERS+"?email=eq."+encodeURIComponent(usuario),
-  {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}});
-  const p=(await r.json())[0];
-  perfilInfo.innerHTML=`<strong>Email:</strong> ${p.email}`;
+  const r = await fetch(
+    REST_USERS+"?email=eq."+encodeURIComponent(usuario),
+    {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}}
+  );
+  const p = (await r.json())[0];
+  perfilInfo.innerHTML = `<strong>Email:</strong> ${p.email}`;
   perfilModal.style.display="flex";
 }
-function editarPerfil(){alert("Em breve 😉")}
-function logout(){localStorage.clear();location.replace("login.html")}
+function fecharPerfil(){perfilModal.style.display="none";}
+function logout(){
+  localStorage.clear();
+  location.replace("login.html");
+}
 
-function gerarSlug(){return Math.random().toString(36).substring(2,10)}
-
-qrForm.onsubmit=async e=>{
+/* GERAR */
+qrForm.onsubmit = async e=>{
   e.preventDefault();
   btnGerar.classList.add("loading");
-  const slug=gerarSlug();
-  const canvas=document.createElement("canvas");
+
+  const slug = gerarSlug();
+  const canvas = document.createElement("canvas");
   await QRCode.toCanvas(canvas,API_REDIRECT+slug,{width:512});
 
   await fetch(API_CREATE,{
@@ -348,28 +345,35 @@ qrForm.onsubmit=async e=>{
     })
   });
 
-  nome.value="";destino.value="";
+  nome.value="";
+  destino.value="";
   await carregar();
   btnGerar.classList.remove("loading");
 };
 
+/* LISTAR */
 async function carregar(){
-  const r=await fetch(
+  const r = await fetch(
     REST_QR+"?email=eq."+encodeURIComponent(usuario)+"&ativo=eq.true&order=criado_em.desc",
     {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}}
   );
-  dados=await r.json();
+  dados = await r.json();
   render();
 }
 
 function render(){
   lista.innerHTML="";
-  dados.forEach(qr=>{
+  dados.filter(d=>d.nome.toLowerCase().includes(search.value.toLowerCase()))
+  .forEach(qr=>{
     lista.innerHTML+=`
     <div class="qr-card">
       <img src="${qr.imagem_url}">
       <strong>${qr.nome}</strong>
-      <div class="meta">${qr.destino}</div>
+      <div class="meta">
+        ${qr.destino}<br>
+        Slug: ${qr.slug}<br>
+        Acessos: ${qr.acessos}
+      </div>
       <div class="actions">
         <button class="open" onclick="window.open('${API_REDIRECT+qr.slug}')">Abrir</button>
         <button class="edit" onclick="editar('${qr.id}','${qr.nome}','${qr.destino}')">Editar</button>
@@ -379,13 +383,14 @@ function render(){
   });
 }
 
+/* EDITAR */
 function editar(id,nome,dest){
   editId=id;
   editNome.value=nome;
   editDestino.value=dest;
   editModal.style.display="flex";
 }
-function fecharEdit(){editModal.style.display="none"}
+function fecharEdit(){editModal.style.display="none";}
 
 async function salvarEdit(){
   await fetch(REST_QR+"?id=eq."+editId,{
@@ -395,13 +400,18 @@ async function salvarEdit(){
       Authorization:"Bearer "+API_KEY,
       "Content-Type":"application/json"
     },
-    body:JSON.stringify({nome:editNome.value,destino:editDestino.value})
+    body:JSON.stringify({
+      nome:editNome.value,
+      destino:editDestino.value
+    })
   });
-  fecharEdit();carregar();
+  fecharEdit();
+  carregar();
 }
 
+/* EXCLUIR */
 async function excluir(id){
-  if(!confirm("Excluir QR?"))return;
+  if(!confirm("Excluir QR?")) return;
   await fetch(REST_QR+"?id=eq."+id,{
     method:"PATCH",
     headers:{
