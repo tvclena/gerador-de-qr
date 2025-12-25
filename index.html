@@ -50,6 +50,7 @@ header span{color:#22c55e}
   background:#0f172a;
   border-radius:22px;
   padding:26px;
+  box-shadow:0 0 50px rgba(0,0,0,.6);
 }
 
 /* FORM */
@@ -76,7 +77,7 @@ form button{
 /* GRID */
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
   gap:22px;
 }
 
@@ -87,29 +88,27 @@ form button{
   padding:16px;
   display:flex;
   flex-direction:column;
-  min-height:420px;
 }
 .qr-card img{
   width:100%;
-  background:#fff;
   border-radius:12px;
+  background:#fff;
   margin-bottom:10px;
 }
 .meta{
   font-size:13px;
   color:#94a3b8;
-  margin-bottom:12px;
-  word-break:break-word;
+  margin-top:6px;
 }
 
 /* ACTIONS */
 .actions{
-  display:flex;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
   gap:8px;
   margin-top:auto;
 }
 .actions button{
-  flex:1;
   padding:10px;
   border:none;
   border-radius:10px;
@@ -129,22 +128,22 @@ form button{
   display:none;
   align-items:center;
   justify-content:center;
+  z-index:10;
 }
-.modal.active{display:flex}
 .modal-box{
-  background:#020617;
-  padding:22px;
-  border-radius:16px;
+  background:#0f172a;
+  padding:24px;
+  border-radius:18px;
   width:100%;
   max-width:420px;
 }
 .modal-box h3{margin-top:0}
 .modal-box input{
   width:100%;
-  margin-bottom:12px;
   padding:12px;
   border-radius:10px;
   border:none;
+  margin-bottom:12px;
 }
 .modal-actions{
   display:flex;
@@ -152,14 +151,25 @@ form button{
 }
 .modal-actions button{
   flex:1;
-  padding:10px;
-  border-radius:10px;
+  padding:12px;
   border:none;
-  font-weight:700;
+  border-radius:10px;
+  font-weight:800;
   cursor:pointer;
 }
-.save{background:#22c55e}
-.cancel{background:#334155;color:#fff}
+
+/* LOADING OVERLAY */
+.loading{
+  position:absolute;
+  inset:0;
+  background:rgba(15,23,42,.8);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  font-weight:800;
+  display:none;
+}
 
 @media(max-width:768px){
   form{grid-template-columns:1fr}
@@ -173,7 +183,7 @@ form button{
 <header>
   <h1>CLENA <span>QR</span></h1>
   <div class="search">
-    <input id="search" placeholder="Buscar QR...">
+    <input id="search" placeholder="Buscar QR…">
   </div>
 </header>
 
@@ -186,17 +196,22 @@ form button{
 </form>
 
 <div class="grid" id="lista"></div>
+
 </div>
 
 <!-- MODAL EDIT -->
 <div class="modal" id="modal">
   <div class="modal-box">
     <h3>Editar QR Code</h3>
-    <input id="editNome" placeholder="Nome">
-    <input id="editDestino" placeholder="Destino">
+    <input id="editNome" placeholder="Nome do QR">
+    <input id="editDestino" placeholder="URL de destino">
+
     <div class="modal-actions">
-      <button class="save" onclick="salvarEdicao()">Salvar</button>
-      <button class="cancel" onclick="fecharModal()">Cancelar</button>
+      <button onclick="fecharModal()">Cancelar</button>
+      <button onclick="salvarEdicao()" style="background:#22c55e">
+        <span id="btnText">Salvar</span>
+        <div class="loading" id="loading">Salvando…</div>
+      </button>
     </div>
   </div>
 </div>
@@ -209,36 +224,39 @@ const API_KEY="sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
 
 const lista=document.getElementById("lista");
 const search=document.getElementById("search");
+const modal=document.getElementById("modal");
+const loading=document.getElementById("loading");
+
 let dados=[], editId=null;
 
 function gerarSlug(){
   return Math.random().toString(36).substring(2,10);
 }
 
-document.getElementById("qrForm").onsubmit=async e=>{
+qrForm.onsubmit=async e=>{
   e.preventDefault();
-  const nome=nomeInput.value.trim();
-  const destino=destinoInput.value.trim();
-  if(!nome||!destino) return alert("Preencha tudo");
-
   const slug=gerarSlug();
   const canvas=document.createElement("canvas");
   await QRCode.toCanvas(canvas,API_REDIRECT+slug,{width:512});
-  const imagem=canvas.toDataURL("image/png");
 
   await fetch(API_CREATE,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({nome,slug,destino,imagem})
+    body:JSON.stringify({
+      nome:nome.value,
+      slug,
+      destino:destino.value,
+      imagem:canvas.toDataURL("image/png")
+    })
   });
 
-  nomeInput.value="";
-  destinoInput.value="";
+  nome.value="";destino.value="";
   carregar();
 };
 
 async function carregar(){
-  const r=await fetch(REST_QR+"?ativo=eq.true&order=criado_em.desc",{headers:{apikey:API_KEY}});
+  const r=await fetch(REST_QR+"?ativo=eq.true&order=criado_em.desc",
+    {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}});
   dados=await r.json();
   render();
 }
@@ -248,72 +266,76 @@ function render(){
   const q=search.value.toLowerCase();
   dados.filter(d=>d.nome.toLowerCase().includes(q)).forEach(qr=>{
     lista.innerHTML+=`
-      <div class="qr-card">
-        <img src="${qr.imagem_url}">
-        <strong>${qr.nome}</strong>
-        <div class="meta">
-          Destino: ${qr.destino}<br>
-          Slug: ${qr.slug}<br>
-          Acessos: ${qr.acessos}
-        </div>
-        <div class="actions">
-          <button class="open" onclick="window.open('${API_REDIRECT+qr.slug}')">Abrir</button>
-          <button class="copy" onclick="copiar('${qr.imagem_url}')">Copiar</button>
-          <button class="edit" onclick="editar('${qr.id}','${qr.nome}','${qr.destino}')">Editar</button>
-          <button class="del" onclick="excluir('${qr.id}')">Excluir</button>
-        </div>
-      </div>`;
+    <div class="qr-card">
+      <img src="${qr.imagem_url}" onerror="this.src='https://placehold.co/400x400?text=QR'">
+      <strong>${qr.nome}</strong>
+      <div class="meta">
+        Destino: ${qr.destino}<br>
+        Slug: ${qr.slug}<br>
+        Acessos: ${qr.acessos}
+      </div>
+      <div class="actions">
+        <button class="open" onclick="openQR('${qr.slug}')">Abrir</button>
+        <button class="copy" onclick="copyImg('${qr.imagem_url}')">Copiar</button>
+        <button class="edit" onclick="editar('${qr.id}','${qr.nome}','${qr.destino}')">Editar</button>
+        <button class="del" onclick="excluir('${qr.id}')">Excluir</button>
+      </div>
+    </div>`;
   });
 }
 
-function editar(id,nome,destino){
+function openQR(slug){window.open(API_REDIRECT+slug);}
+function editar(id,nome,dest){
   editId=id;
   editNome.value=nome;
-  editDestino.value=destino;
-  modal.classList.add("active");
+  editDestino.value=dest;
+  modal.style.display="flex";
 }
+function fecharModal(){modal.style.display="none";}
 
 async function salvarEdicao(){
+  loading.style.display="flex";
   await fetch(REST_QR+"?id=eq."+editId,{
     method:"PATCH",
-    headers:{apikey:API_KEY,"Content-Type":"application/json"},
+    headers:{
+      apikey:API_KEY,
+      Authorization:"Bearer "+API_KEY,
+      "Content-Type":"application/json",
+      Prefer:"return=representation"
+    },
     body:JSON.stringify({
       nome:editNome.value,
       destino:editDestino.value
     })
   });
+  loading.style.display="none";
   fecharModal();
   carregar();
-}
-
-function fecharModal(){
-  modal.classList.remove("active");
-}
-
-async function copiar(url){
-  const b=await (await fetch(url)).blob();
-  await navigator.clipboard.write([new ClipboardItem({[b.type]:b})]);
-  alert("QR copiado!");
 }
 
 async function excluir(id){
   if(!confirm("Excluir QR?"))return;
   await fetch(REST_QR+"?id=eq."+id,{
     method:"PATCH",
-    headers:{apikey:API_KEY,"Content-Type":"application/json"},
+    headers:{
+      apikey:API_KEY,
+      Authorization:"Bearer "+API_KEY,
+      "Content-Type":"application/json"
+    },
     body:JSON.stringify({ativo:false})
   });
   carregar();
 }
 
-search.oninput=render;
-const nomeInput=document.getElementById("nome");
-const destinoInput=document.getElementById("destino");
-const modal=document.getElementById("modal");
-const editNome=document.getElementById("editNome");
-const editDestino=document.getElementById("editDestino");
+async function copyImg(url){
+  const b=await(await fetch(url)).blob();
+  await navigator.clipboard.write([new ClipboardItem({[b.type]:b})]);
+  alert("QR copiado!");
+}
 
+search.oninput=render;
 carregar();
 </script>
+
 </body>
 </html>
