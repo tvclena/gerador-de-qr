@@ -297,7 +297,7 @@ form button{
 </div>
 
 <script>
-const usuario=localStorage.getItem("usuario_email");
+const usuario = localStorage.getItem("usuario_email");
 if(!usuario) location.replace("login.html");
 
 setTimeout(()=>{
@@ -309,9 +309,13 @@ let dados=[], editId=null;
 
 /* PERFIL */
 async function abrirPerfil(){
-  const r = await fetch("/api/perfil",{method:"POST",headers:{ "Content-Type":"application/json" },body:JSON.stringify({email:usuario})});
+  const r = await fetch("/api/perfil",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ email:usuario })
+  });
   const p = await r.json();
-  perfilInfo.innerHTML=`<strong>Email:</strong> ${p.email}`;
+  perfilInfo.innerHTML = `<strong>Email:</strong> ${p.email}`;
   perfilModal.style.display="flex";
 }
 function logout(){
@@ -320,14 +324,16 @@ function logout(){
 }
 
 /* QR */
-function gerarSlug(){return Math.random().toString(36).substring(2,10)}
+function gerarSlug(){
+  return Math.random().toString(36).substring(2,10);
+}
 
-qrForm.onsubmit=async e=>{
+qrForm.onsubmit = async e=>{
   e.preventDefault();
   btnGerar.classList.add("loading");
 
-  const slug=gerarSlug();
-  const canvas=document.createElement("canvas");
+  const slug = gerarSlug();
+  const canvas = document.createElement("canvas");
   await QRCode.toCanvas(canvas, location.origin+"/r/"+slug,{width:512});
 
   await fetch("/api/qr-create",{
@@ -342,20 +348,24 @@ qrForm.onsubmit=async e=>{
     })
   });
 
-  nome.value="";destino.value="";
+  nome.value=""; destino.value="";
   await carregar();
   btnGerar.classList.remove("loading");
 };
 
 async function carregar(){
-  const r = await fetch("/api/qr-list",{method:"POST",headers:{ "Content-Type":"application/json" },body:JSON.stringify({email:usuario})});
+  const r = await fetch("/api/qr-list",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ email:usuario })
+  });
   dados = await r.json();
   render();
 }
 
 function render(){
   lista.innerHTML="";
-  const q=search.value.toLowerCase();
+  const q = search.value.toLowerCase();
   dados.filter(d=>d.nome.toLowerCase().includes(q)).forEach(qr=>{
     lista.innerHTML+=`
     <div class="qr-card">
@@ -383,23 +393,27 @@ async function salvarEdit(){
   await fetch("/api/qr-update",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({id:editId,nome:editNome.value,destino:editDestino.value})
+    body:JSON.stringify({
+      id:editId,
+      nome:editNome.value,
+      destino:editDestino.value
+    })
   });
   fecharEdit();
   carregar();
 }
 
 async function excluir(id){
-  if(!confirm("Excluir QR?"))return;
+  if(!confirm("Excluir QR?")) return;
   await fetch("/api/qr-delete",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({id})
+    body:JSON.stringify({ id })
   });
   carregar();
 }
 
-search.oninput=render;
+search.oninput = render;
 carregar();
 </script>
 
