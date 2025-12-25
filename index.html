@@ -2,31 +2,74 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>CLENA QR • Dashboard</title>
+<title>CLENA • QR Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Inter,Arial}
+html,body{margin:0;height:100%}
+
+:root{
+  --bg:#0b1020;
+  --surface:#121a32;
+  --card:#18224a;
+  --primary:#38bdf8;
+  --secondary:#7c3aed;
+  --muted:#94a3b8;
+  --border:#273469;
+  --success:#22c55e;
+  --danger:#ef4444;
+}
+
 body{
-  margin:0;
-  min-height:100vh;
-  background:radial-gradient(circle at top,#0b132b,#000 60%);
+  background:radial-gradient(70% 60% at 50% 25%, #18224a 0%, #0b1020 65%);
   color:#fff;
-  padding:32px 20px;
+  display:none;
+}
+
+/* SPLASH */
+#splash{
+  position:fixed;inset:0;
+  background:var(--bg);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:100;
+}
+.splash-logo{
+  font-size:64px;
+  font-weight:900;
+  display:flex;
+  gap:10px;
+}
+.splash-logo span{
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:fade .8s ease forwards;
+}
+@keyframes fade{
+  from{opacity:0;transform:scale(.7)}
+  to{opacity:1;transform:scale(1)}
 }
 
 /* HEADER */
 header{
   max-width:1200px;
-  margin:auto;
+  margin:32px auto 24px;
+  padding:0 20px;
   display:flex;
   justify-content:space-between;
   align-items:center;
-  margin-bottom:24px;
 }
-header h1{font-size:28px;font-weight:800}
-header span{color:#22c55e}
+header h1{margin:0;font-size:28px;font-weight:900}
+.right{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
 
 /* SEARCH */
 .search{
@@ -43,14 +86,25 @@ header span{color:#22c55e}
   color:#fff;
 }
 
+/* PROFILE ICON */
+.profile-btn{
+  width:42px;height:42px;
+  border-radius:50%;
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  cursor:pointer;
+}
+
 /* CARD */
 .card{
   max-width:1200px;
   margin:auto;
-  background:#0f172a;
-  border-radius:22px;
+  background:rgba(18,26,50,.9);
   padding:26px;
-  box-shadow:0 0 50px rgba(0,0,0,.6);
+  border-radius:22px;
 }
 
 /* FORM */
@@ -61,7 +115,7 @@ form{
   margin-bottom:26px;
 }
 form input{
-  padding:14px 16px;
+  padding:14px;
   border-radius:12px;
   border:none;
 }
@@ -69,7 +123,7 @@ form button{
   padding:14px 28px;
   border-radius:12px;
   border:none;
-  background:#22c55e;
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
   font-weight:800;
   cursor:pointer;
 }
@@ -88,7 +142,6 @@ form button{
   padding:16px;
   display:flex;
   flex-direction:column;
-  min-height:420px;
 }
 .qr-card img{
   width:100%;
@@ -96,17 +149,8 @@ form button{
   background:#fff;
   margin-bottom:12px;
 }
-.qr-card strong{
-  font-size:16px;
-}
-.meta{
-  font-size:13px;
-  color:#94a3b8;
-  margin-top:6px;
-  line-height:1.5;
-}
+.meta{font-size:13px;color:var(--muted)}
 
-/* ACTIONS */
 .actions{
   display:grid;
   grid-template-columns:repeat(2,1fr);
@@ -114,35 +158,30 @@ form button{
   margin-top:auto;
 }
 .actions button{
-  height:40px;
-  border:none;
-  border-radius:10px;
-  font-weight:700;
-  cursor:pointer;
+  height:40px;border:none;border-radius:10px;
+  font-weight:700;cursor:pointer;
 }
 .open{background:#334155;color:#fff}
 .copy{background:#eab308;color:#000}
 .edit{background:#22c55e;color:#000}
-.del{background:#e50914;color:#fff}
+.del{background:var(--danger);color:#fff}
 
 /* MODAL */
 .modal{
-  position:fixed;
-  inset:0;
+  position:fixed;inset:0;
   background:rgba(0,0,0,.6);
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:10;
+  z-index:20;
 }
 .modal-box{
-  background:#0f172a;
-  padding:24px;
+  background:var(--surface);
+  padding:26px;
   border-radius:18px;
   width:100%;
   max-width:420px;
 }
-.modal-box h3{margin-top:0}
 .modal-box input{
   width:100%;
   padding:12px;
@@ -162,40 +201,32 @@ form button{
   font-weight:800;
   cursor:pointer;
 }
-
-/* LOADING */
-.loading{
-  position:absolute;
-  inset:0;
-  background:rgba(15,23,42,.85);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  border-radius:10px;
-  font-weight:800;
-}
-
-@media(max-width:768px){
-  form{grid-template-columns:1fr}
-  .search{width:100%}
-}
 </style>
 </head>
 
 <body>
 
+<div id="splash">
+  <div class="splash-logo">
+    <span>C</span><span>lena</span>
+  </div>
+</div>
+
 <header>
-  <h1>CLENA <span>QR</span></h1>
-  <div class="search">
-    <input id="search" placeholder="Buscar QR…">
+  <h1>CLENA <span style="color:var(--primary)">QR</span></h1>
+  <div class="right">
+    <div class="search">
+      <input id="search" placeholder="Buscar QR…">
+    </div>
+    <div class="profile-btn" onclick="abrirPerfil()">👤</div>
   </div>
 </header>
 
 <div class="card">
 
 <form id="qrForm">
-  <input id="nome" placeholder="Nome do QR">
-  <input id="destino" placeholder="URL de destino">
+  <input id="nome" placeholder="Nome do QR" required>
+  <input id="destino" placeholder="URL de destino" required>
   <button>Gerar</button>
 </form>
 
@@ -203,38 +234,62 @@ form button{
 
 </div>
 
-<!-- MODAL -->
-<div class="modal" id="modal">
+<!-- PERFIL -->
+<div class="modal" id="perfilModal">
   <div class="modal-box">
-    <h3>Editar QR Code</h3>
-    <input id="editNome" placeholder="Nome do QR">
-    <input id="editDestino" placeholder="URL de destino">
+    <h3>Meu perfil</h3>
+    <div class="meta" id="perfilInfo"></div>
     <div class="modal-actions">
-      <button onclick="fecharModal()">Cancelar</button>
-      <button style="background:#22c55e" onclick="salvarEdicao()">
-        Salvar
-        <div class="loading" id="loading">Salvando…</div>
-      </button>
+      <button onclick="editarPerfil()">Editar</button>
+      <button style="background:var(--danger)" onclick="logout()">Sair</button>
     </div>
   </div>
 </div>
 
 <script>
+/* 🔐 BLINDAGEM */
+const usuario = localStorage.getItem("usuario_email");
+if(!usuario){ location.replace("login.html"); }
+
+/* SPLASH */
+setTimeout(()=>{
+  splash.style.display="none";
+  document.body.style.display="block";
+},1600);
+
+/* API */
 const API_CREATE="https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
 const API_REDIRECT="https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
 const REST_QR="https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes";
+const REST_USERS="https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/usuarios";
 const API_KEY="sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
 
-const lista=document.getElementById("lista");
-const search=document.getElementById("search");
-const modal=document.getElementById("modal");
-const loading=document.getElementById("loading");
+let dados=[], perfil={};
 
-let dados=[], editId=null;
-
-function gerarSlug(){
-  return Math.random().toString(36).substring(2,10);
+/* PERFIL */
+async function abrirPerfil(){
+  const r = await fetch(
+    REST_USERS+"?email=eq."+encodeURIComponent(usuario),
+    {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}}
+  );
+  perfil = (await r.json())[0];
+  perfilInfo.innerHTML=`
+    <strong>Email:</strong> ${perfil.email}<br>
+    <strong>CPF:</strong> ${perfil.cpf || "-"}<br>
+    <strong>WhatsApp:</strong> ${perfil.whatsapp || "-"}
+  `;
+  perfilModal.style.display="flex";
 }
+function editarPerfil(){
+  alert("Próximo passo: edição de perfil 😉");
+}
+function logout(){
+  localStorage.removeItem("usuario_email");
+  location.replace("login.html");
+}
+
+/* QR */
+function gerarSlug(){return Math.random().toString(36).substring(2,10);}
 
 qrForm.onsubmit=async e=>{
   e.preventDefault();
@@ -249,7 +304,8 @@ qrForm.onsubmit=async e=>{
       nome:nome.value,
       slug,
       destino:destino.value,
-      imagem:canvas.toDataURL("image/png")
+      imagem:canvas.toDataURL("image/png"),
+      email:usuario
     })
   });
 
@@ -258,8 +314,10 @@ qrForm.onsubmit=async e=>{
 };
 
 async function carregar(){
-  const r=await fetch(REST_QR+"?ativo=eq.true&order=criado_em.desc",
-    {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}});
+  const r=await fetch(
+    REST_QR+"?email=eq."+encodeURIComponent(usuario)+"&ativo=eq.true&order=criado_em.desc",
+    {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}}
+  );
   dados=await r.json();
   render();
 }
@@ -270,7 +328,7 @@ function render(){
   dados.filter(d=>d.nome.toLowerCase().includes(q)).forEach(qr=>{
     lista.innerHTML+=`
     <div class="qr-card">
-      <img src="${qr.imagem_url}" onerror="this.src='https://placehold.co/400x400?text=QR'">
+      <img src="${qr.imagem_url}">
       <strong>${qr.nome}</strong>
       <div class="meta">
         Destino: ${qr.destino}<br>
@@ -278,41 +336,13 @@ function render(){
         Acessos: ${qr.acessos}
       </div>
       <div class="actions">
-        <button class="open" onclick="openQR('${qr.slug}')">Abrir</button>
+        <button class="open" onclick="window.open('${API_REDIRECT+qr.slug}')">Abrir</button>
         <button class="copy" onclick="copyImg('${qr.imagem_url}')">Copiar</button>
         <button class="edit" onclick="editar('${qr.id}','${qr.nome}','${qr.destino}')">Editar</button>
         <button class="del" onclick="excluir('${qr.id}')">Excluir</button>
       </div>
     </div>`;
   });
-}
-
-function openQR(slug){window.open(API_REDIRECT+slug);}
-function editar(id,nome,dest){
-  editId=id;
-  editNome.value=nome;
-  editDestino.value=dest;
-  modal.style.display="flex";
-}
-function fecharModal(){modal.style.display="none";}
-
-async function salvarEdicao(){
-  loading.style.display="flex";
-  await fetch(REST_QR+"?id=eq."+editId,{
-    method:"PATCH",
-    headers:{
-      apikey:API_KEY,
-      Authorization:"Bearer "+API_KEY,
-      "Content-Type":"application/json"
-    },
-    body:JSON.stringify({
-      nome:editNome.value,
-      destino:editDestino.value
-    })
-  });
-  loading.style.display="none";
-  fecharModal();
-  carregar();
 }
 
 async function excluir(id){
