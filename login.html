@@ -41,12 +41,6 @@ body{
   padding:42px;
   border-radius:22px;
   box-shadow:0 40px 90px rgba(0,0,0,.7);
-  animation:fadeIn .5s ease;
-}
-
-@keyframes fadeIn{
-  from{opacity:0;transform:translateY(12px)}
-  to{opacity:1;transform:translateY(0)}
 }
 
 /* LOGO */
@@ -55,39 +49,26 @@ body{
   flex-direction:column;
   align-items:center;
   gap:8px;
-  margin-bottom:30px;
+  margin-bottom:26px;
 }
 
 .logo-text{
   font-size:30px;
   font-weight:900;
-  letter-spacing:.6px;
-}
-
-.logo-anim{
-  animation:logoGrow 1.3s ease forwards;
-}
-
-@keyframes logoGrow{
-  0%{transform:scale(.5);opacity:.2}
-  60%{transform:scale(1.1)}
-  100%{transform:scale(1);opacity:1}
 }
 
 /* FORM */
-.group{margin-bottom:18px}
+.group{margin-bottom:16px}
 label{font-size:14px;color:var(--muted);margin-bottom:6px;display:block}
 
 input{
   width:100%;
   padding:14px 16px;
-  font-size:15px;
   border-radius:14px;
   border:1px solid var(--border);
   background:rgba(0,0,0,.35);
   color:#fff;
 }
-input:focus{outline:none;border-color:var(--primary)}
 
 .btn{
   width:100%;
@@ -101,18 +82,27 @@ input:focus{outline:none;border-color:var(--primary)}
   cursor:pointer;
 }
 
-.link{
-  margin-top:14px;
-  text-align:center;
-  font-size:14px;
-  text-decoration:underline;
-  cursor:pointer;
-  color:var(--muted);
+.btn.secondary{
+  margin-top:10px;
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--text);
 }
 
 .msg{margin-top:12px;min-height:20px;font-size:14px}
 .msg.error{color:var(--error)}
 .msg.success{color:var(--success)}
+
+.footer{
+  margin-top:18px;
+  text-align:center;
+  font-size:13px;
+  color:var(--muted);
+}
+.footer span{
+  text-decoration:underline;
+  cursor:pointer;
+}
 
 /* MODAL */
 .modal{
@@ -124,11 +114,13 @@ input:focus{outline:none;border-color:var(--primary)}
 }
 
 .modal-box{
-  width:420px;
+  width:440px;
   max-width:92%;
   background:var(--surface);
-  padding:36px;
+  padding:32px;
   border-radius:22px;
+  max-height:80vh;
+  overflow:auto;
 }
 </style>
 </head>
@@ -138,8 +130,8 @@ input:focus{outline:none;border-color:var(--primary)}
 <!-- LOGIN -->
 <div class="container" id="boxLogin">
 
-  <div class="logo-wrap" id="logoAnim">
-    <svg width="110" height="110" viewBox="0 0 120 120">
+  <div class="logo-wrap">
+    <svg width="100" height="100" viewBox="0 0 120 120">
       <defs>
         <linearGradient id="gradC" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#38bdf8"/>
@@ -147,10 +139,8 @@ input:focus{outline:none;border-color:var(--primary)}
         </linearGradient>
       </defs>
       <path d="M90 30 A40 40 0 1 0 90 90"
-            fill="none"
-            stroke="url(#gradC)"
-            stroke-width="14"
-            stroke-linecap="round"/>
+        fill="none" stroke="url(#gradC)"
+        stroke-width="14" stroke-linecap="round"/>
     </svg>
     <div class="logo-text">clena</div>
   </div>
@@ -166,12 +156,18 @@ input:focus{outline:none;border-color:var(--primary)}
   </div>
 
   <button class="btn" id="btnLogin">Entrar</button>
-  <div class="link" id="abrirCadastro">Criar conta</div>
+  <button class="btn secondary" id="abrirCadastro">Cadastrar</button>
+
   <div class="msg" id="msg"></div>
+
+  <div class="footer">
+    Ao continuar, você concorda com nossa
+    <span id="abrirPolitica">Política de Privacidade</span>
+  </div>
 </div>
 
 <!-- CADASTRO -->
-<div class="modal" id="modal">
+<div class="modal" id="modalCadastro">
   <div class="modal-box">
     <h2>Criar conta</h2>
 
@@ -179,8 +175,27 @@ input:focus{outline:none;border-color:var(--primary)}
     <div class="group"><label>Senha</label><input id="c_senha" type="password"></div>
 
     <button class="btn" id="btnCadastro">Cadastrar</button>
-    <div class="link" id="fecharCadastro">Cancelar</div>
+    <button class="btn secondary" onclick="modalCadastro.style.display='none'">Cancelar</button>
     <div class="msg" id="msgCadastro"></div>
+  </div>
+</div>
+
+<!-- POLÍTICA -->
+<div class="modal" id="modalPolitica">
+  <div class="modal-box">
+    <h2>Política de Privacidade</h2>
+    <p>
+      A CLENA respeita sua privacidade. Os dados coletados (email e senha)
+      são utilizados exclusivamente para autenticação e acesso ao sistema.
+    </p>
+    <p>
+      Não compartilhamos informações com terceiros. Os dados são armazenados
+      de forma segura e utilizados apenas para fins operacionais.
+    </p>
+    <p>
+      Ao utilizar a plataforma, você concorda com esta política.
+    </p>
+    <button class="btn" onclick="modalPolitica.style.display='none'">Fechar</button>
   </div>
 </div>
 
@@ -190,47 +205,38 @@ const sb = supabase.createClient(
   "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
 );
 
-/* MODAL */
-abrirCadastro.onclick=()=>modal.style.display="flex";
-fecharCadastro.onclick=()=>modal.style.display="none";
+abrirCadastro.onclick=()=>modalCadastro.style.display="flex";
+abrirPolitica.onclick=()=>modalPolitica.style.display="flex";
 
 /* LOGIN */
 btnLogin.onclick = async ()=>{
   msg.textContent="";
-  const emailVal=email.value.trim();
-  const senhaVal=senha.value;
-
-  const { data } = await sb
-    .from("usuarios")
+  const { data } = await sb.from("usuarios")
     .select("email,senha")
-    .eq("email",emailVal)
+    .eq("email",email.value.trim())
     .maybeSingle();
 
   if(!data){
-    // abre cadastro com dados preenchidos
-    modal.style.display="flex";
-    c_email.value=emailVal;
-    c_senha.value=senhaVal;
-    msg.textContent="Usuário não encontrado. Crie sua conta.";
+    modalCadastro.style.display="flex";
+    c_email.value=email.value;
+    c_senha.value=senha.value;
+    msg.textContent="Usuário não encontrado. Cadastre-se.";
     msg.className="msg error";
     return;
   }
 
-  if(data.senha!==senhaVal){
+  if(data.senha!==senha.value){
     msg.textContent="Senha incorreta";
     msg.className="msg error";
     return;
   }
 
   localStorage.setItem("usuario_email",data.email);
-  boxLogin.style.display="none";
-  logoAnim.classList.add("logo-anim");
-  setTimeout(()=>location.replace("index.html"),1300);
+  location.replace("index.html");
 };
 
 /* CADASTRO */
 btnCadastro.onclick = async ()=>{
-  msgCadastro.textContent="";
   const { error } = await sb.from("usuarios").insert({
     email:c_email.value.trim(),
     senha:c_senha.value
@@ -242,7 +248,7 @@ btnCadastro.onclick = async ()=>{
     return;
   }
 
-  modal.style.display="none";
+  modalCadastro.style.display="none";
   email.value=c_email.value;
   senha.value=c_senha.value;
   msg.textContent="Conta criada! Clique em Entrar.";
