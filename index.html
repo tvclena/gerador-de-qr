@@ -77,7 +77,7 @@ form button{
 /* GRID */
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
   gap:22px;
 }
 
@@ -88,35 +88,40 @@ form button{
   padding:16px;
   display:flex;
   flex-direction:column;
+  min-height:420px;
 }
 .qr-card img{
   width:100%;
   border-radius:12px;
   background:#fff;
-  margin-bottom:10px;
+  margin-bottom:12px;
+}
+.qr-card strong{
+  font-size:16px;
 }
 .meta{
   font-size:13px;
   color:#94a3b8;
   margin-top:6px;
+  line-height:1.5;
 }
 
 /* ACTIONS */
 .actions{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:8px;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
   margin-top:auto;
 }
 .actions button{
-  padding:10px;
+  height:40px;
   border:none;
   border-radius:10px;
   font-weight:700;
   cursor:pointer;
 }
 .open{background:#334155;color:#fff}
-.copy{background:#eab308}
+.copy{background:#eab308;color:#000}
 .edit{background:#22c55e;color:#000}
 .del{background:#e50914;color:#fff}
 
@@ -158,17 +163,16 @@ form button{
   cursor:pointer;
 }
 
-/* LOADING OVERLAY */
+/* LOADING */
 .loading{
   position:absolute;
   inset:0;
-  background:rgba(15,23,42,.8);
-  display:flex;
+  background:rgba(15,23,42,.85);
+  display:none;
   align-items:center;
   justify-content:center;
   border-radius:10px;
   font-weight:800;
-  display:none;
 }
 
 @media(max-width:768px){
@@ -199,17 +203,16 @@ form button{
 
 </div>
 
-<!-- MODAL EDIT -->
+<!-- MODAL -->
 <div class="modal" id="modal">
   <div class="modal-box">
     <h3>Editar QR Code</h3>
     <input id="editNome" placeholder="Nome do QR">
     <input id="editDestino" placeholder="URL de destino">
-
     <div class="modal-actions">
       <button onclick="fecharModal()">Cancelar</button>
-      <button onclick="salvarEdicao()" style="background:#22c55e">
-        <span id="btnText">Salvar</span>
+      <button style="background:#22c55e" onclick="salvarEdicao()">
+        Salvar
         <div class="loading" id="loading">Salvando…</div>
       </button>
     </div>
@@ -300,8 +303,7 @@ async function salvarEdicao(){
     headers:{
       apikey:API_KEY,
       Authorization:"Bearer "+API_KEY,
-      "Content-Type":"application/json",
-      Prefer:"return=representation"
+      "Content-Type":"application/json"
     },
     body:JSON.stringify({
       nome:editNome.value,
