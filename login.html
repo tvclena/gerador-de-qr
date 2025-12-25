@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>Login | CLENA</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -17,7 +17,6 @@ html,body{margin:0;height:100%}
   --card:#18224a;
   --primary:#38bdf8;
   --secondary:#7c3aed;
-  --text:#e5e7eb;
   --muted:#94a3b8;
   --border:#273469;
   --error:#f87171;
@@ -28,8 +27,8 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
-  background:radial-gradient(60% 50% at 50% 20%, #18224a 0%, #0b1020 65%);
-  color:var(--text);
+  background:radial-gradient(70% 60% at 50% 25%, #18224a 0%, #0b1020 65%);
+  color:#fff;
 }
 
 /* CARD */
@@ -44,35 +43,39 @@ body{
 }
 
 /* LOGO */
-.logo-wrap{
+.logo{
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:8px;
-  margin-bottom:26px;
+  gap:10px;
+  margin-bottom:32px;
 }
 
 .logo-text{
   font-size:30px;
   font-weight:900;
+  letter-spacing:.6px;
 }
 
 /* FORM */
-.group{margin-bottom:16px}
+.group{margin-bottom:20px}
 label{font-size:14px;color:var(--muted);margin-bottom:6px;display:block}
 
 input{
   width:100%;
   padding:14px 16px;
+  font-size:15px;
   border-radius:14px;
   border:1px solid var(--border);
   background:rgba(0,0,0,.35);
   color:#fff;
 }
+input:focus{outline:none;border-color:var(--primary)}
 
 .btn{
   width:100%;
   padding:16px;
+  margin-top:10px;
   border:none;
   border-radius:16px;
   background:linear-gradient(135deg,var(--primary),var(--secondary));
@@ -82,27 +85,18 @@ input{
   cursor:pointer;
 }
 
-.btn.secondary{
-  margin-top:10px;
-  background:transparent;
-  border:1px solid var(--border);
-  color:var(--text);
-}
-
-.msg{margin-top:12px;min-height:20px;font-size:14px}
-.msg.error{color:var(--error)}
-.msg.success{color:var(--success)}
-
-.footer{
-  margin-top:18px;
+.link{
+  margin-top:16px;
   text-align:center;
-  font-size:13px;
-  color:var(--muted);
-}
-.footer span{
+  font-size:14px;
   text-decoration:underline;
   cursor:pointer;
+  color:var(--muted);
 }
+
+.msg{margin-top:14px;min-height:20px;font-size:14px}
+.msg.error{color:var(--error)}
+.msg.success{color:var(--success)}
 
 /* MODAL */
 .modal{
@@ -114,13 +108,37 @@ input{
 }
 
 .modal-box{
-  width:440px;
+  width:420px;
   max-width:92%;
   background:var(--surface);
-  padding:32px;
+  padding:36px;
   border-radius:22px;
-  max-height:80vh;
-  overflow:auto;
+}
+
+/* SUCESSO */
+.success-anim{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
+  margin-top:20px;
+  animation:fadeUp .4s ease;
+}
+.check{
+  width:72px;height:72px;border-radius:50%;
+  background:var(--success);
+  display:flex;align-items:center;justify-content:center;
+  font-size:38px;color:#fff;
+  animation:pop .5s ease;
+}
+@keyframes pop{
+  0%{transform:scale(.3);opacity:0}
+  80%{transform:scale(1.1)}
+  100%{transform:scale(1);opacity:1}
+}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
 }
 </style>
 </head>
@@ -128,10 +146,9 @@ input{
 <body>
 
 <!-- LOGIN -->
-<div class="container" id="boxLogin">
-
-  <div class="logo-wrap">
-    <svg width="100" height="100" viewBox="0 0 120 120">
+<div class="container">
+  <div class="logo">
+    <svg width="96" height="96" viewBox="0 0 120 120">
       <defs>
         <linearGradient id="gradC" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#38bdf8"/>
@@ -155,47 +172,25 @@ input{
     <input id="senha" type="password">
   </div>
 
-  <button class="btn" id="btnLogin">Entrar</button>
-  <button class="btn secondary" id="abrirCadastro">Cadastrar</button>
-
+  <button id="btnLogin" class="btn">Entrar</button>
+  <div class="link" id="abrirCadastro">Criar conta</div>
   <div class="msg" id="msg"></div>
-
-  <div class="footer">
-    Ao continuar, você concorda com nossa
-    <span id="abrirPolitica">Política de Privacidade</span>
-  </div>
 </div>
 
 <!-- CADASTRO -->
-<div class="modal" id="modalCadastro">
+<div class="modal" id="modal">
   <div class="modal-box">
     <h2>Criar conta</h2>
 
     <div class="group"><label>Email</label><input id="c_email"></div>
+    <div class="group"><label>CPF</label><input id="c_cpf"></div>
+    <div class="group"><label>WhatsApp</label><input id="c_whats"></div>
     <div class="group"><label>Senha</label><input id="c_senha" type="password"></div>
+    <div class="group"><label>Confirmar senha</label><input id="c_confirma" type="password"></div>
 
-    <button class="btn" id="btnCadastro">Cadastrar</button>
-    <button class="btn secondary" onclick="modalCadastro.style.display='none'">Cancelar</button>
+    <button id="btnCadastro" class="btn">Cadastrar</button>
+    <div class="link" id="fecharCadastro">Cancelar</div>
     <div class="msg" id="msgCadastro"></div>
-  </div>
-</div>
-
-<!-- POLÍTICA -->
-<div class="modal" id="modalPolitica">
-  <div class="modal-box">
-    <h2>Política de Privacidade</h2>
-    <p>
-      A CLENA respeita sua privacidade. Os dados coletados (email e senha)
-      são utilizados exclusivamente para autenticação e acesso ao sistema.
-    </p>
-    <p>
-      Não compartilhamos informações com terceiros. Os dados são armazenados
-      de forma segura e utilizados apenas para fins operacionais.
-    </p>
-    <p>
-      Ao utilizar a plataforma, você concorda com esta política.
-    </p>
-    <button class="btn" onclick="modalPolitica.style.display='none'">Fechar</button>
   </div>
 </div>
 
@@ -205,8 +200,22 @@ const sb = supabase.createClient(
   "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
 );
 
-abrirCadastro.onclick=()=>modalCadastro.style.display="flex";
-abrirPolitica.onclick=()=>modalPolitica.style.display="flex";
+/* MODAL */
+abrirCadastro.onclick=()=>modal.style.display="flex";
+fecharCadastro.onclick=()=>modal.style.display="none";
+
+/* MÁSCARAS */
+c_cpf.oninput=e=>{
+  e.target.value=e.target.value.replace(/\D/g,"")
+    .replace(/(\d{3})(\d)/,"$1.$2")
+    .replace(/(\d{3})(\d)/,"$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/,"$1-$2").slice(0,14);
+};
+c_whats.oninput=e=>{
+  e.target.value=e.target.value.replace(/\D/g,"")
+    .replace(/^(\d{2})(\d)/,"($1) $2")
+    .replace(/(\d{5})(\d)/,"$1-$2").slice(0,15);
+};
 
 /* LOGIN */
 btnLogin.onclick = async ()=>{
@@ -216,20 +225,8 @@ btnLogin.onclick = async ()=>{
     .eq("email",email.value.trim())
     .maybeSingle();
 
-  if(!data){
-    modalCadastro.style.display="flex";
-    c_email.value=email.value;
-    c_senha.value=senha.value;
-    msg.textContent="Usuário não encontrado. Cadastre-se.";
-    msg.className="msg error";
-    return;
-  }
-
-  if(data.senha!==senha.value){
-    msg.textContent="Senha incorreta";
-    msg.className="msg error";
-    return;
-  }
+  if(!data){ msg.textContent="Usuário não encontrado"; msg.className="msg error"; return; }
+  if(data.senha!==senha.value){ msg.textContent="Senha incorreta"; msg.className="msg error"; return; }
 
   localStorage.setItem("usuario_email",data.email);
   location.replace("index.html");
@@ -237,22 +234,39 @@ btnLogin.onclick = async ()=>{
 
 /* CADASTRO */
 btnCadastro.onclick = async ()=>{
+  msgCadastro.textContent="";
+  if(c_senha.value!==c_confirma.value){
+    msgCadastro.textContent="As senhas não conferem";
+    msgCadastro.className="msg error";return;
+  }
+
   const { error } = await sb.from("usuarios").insert({
     email:c_email.value.trim(),
+    cpf:c_cpf.value.replace(/\D/g,""),
+    whatsapp:c_whats.value.replace(/\D/g,""),
     senha:c_senha.value
   });
 
   if(error){
     msgCadastro.textContent="Erro ao cadastrar";
-    msgCadastro.className="msg error";
-    return;
+    msgCadastro.className="msg error";return;
   }
 
-  modalCadastro.style.display="none";
-  email.value=c_email.value;
-  senha.value=c_senha.value;
-  msg.textContent="Conta criada! Clique em Entrar.";
-  msg.className="msg success";
+  msgCadastro.innerHTML=`
+    <div class="success-anim">
+      <div class="check">✓</div>
+      <strong>Conta criada com sucesso</strong>
+    </div>
+  `;
+  msgCadastro.className="msg success";
+
+  setTimeout(()=>{
+    modal.style.display="none";
+    email.value=c_email.value;
+    senha.value=c_senha.value;
+    msg.textContent="Conta criada! Clique em Entrar 🚀";
+    msg.className="msg success";
+  },2000);
 };
 </script>
 
