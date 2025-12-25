@@ -240,17 +240,30 @@ btnCadastro.onclick = async ()=>{
     msgCadastro.className="msg error";return;
   }
 
-  const { error } = await sb.from("usuarios").insert({
-    email:c_email.value.trim(),
-    cpf:c_cpf.value.replace(/\D/g,""),
-    whatsapp:c_whats.value.replace(/\D/g,""),
-    senha:c_senha.value
-  });
+const { error } = await sb.from("usuarios").insert({
+  email: c_email.value.trim(),
+  cpf: c_cpf.value.replace(/\D/g,""),
+  whatsapp: c_whats.value.replace(/\D/g,""),
+  senha: c_senha.value
+});
 
-  if(error){
-    msgCadastro.textContent="Erro ao cadastrar";
-    msgCadastro.className="msg error";return;
+if(error){
+  console.error(error);
+
+  if(error.code === "23505"){
+    msgCadastro.textContent = "Este email já está cadastrado";
+  } 
+  else if(error.code === "23514"){
+    msgCadastro.textContent = "A senha deve ter no mínimo 4 caracteres";
+  } 
+  else {
+    msgCadastro.textContent = error.message;
   }
+
+  msgCadastro.className="msg error";
+  return;
+}
+
 
   msgCadastro.innerHTML=`
     <div class="success-anim">
