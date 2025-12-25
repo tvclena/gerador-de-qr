@@ -86,7 +86,7 @@ header h1{margin:0;font-size:28px;font-weight:900}
   color:#fff;
 }
 
-/* PROFILE ICON */
+/* PROFILE */
 .profile-btn{
   width:42px;height:42px;
   border-radius:50%;
@@ -126,7 +126,25 @@ form button{
   background:linear-gradient(135deg,var(--primary),var(--secondary));
   font-weight:800;
   cursor:pointer;
+  position:relative;
 }
+
+/* BOTÃO LOADING */
+#btnGerar.loading{
+  pointer-events:none;
+  opacity:.8;
+}
+.btn-spinner{
+  width:18px;height:18px;
+  border:3px solid rgba(255,255,255,.3);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  display:none;
+}
+#btnGerar.loading .btn-spinner{display:block}
+#btnGerar.loading .btn-text{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* GRID */
 .grid{
@@ -182,12 +200,26 @@ form button{
   width:100%;
   max-width:420px;
 }
-.modal-box input{
-  width:100%;
-  padding:12px;
-  border-radius:10px;
-  border:none;
-  margin-bottom:12px;
+
+/* PERFIL */
+.perfil-header{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  margin-bottom:14px;
+}
+.perfil-avatar{
+  width:72px;height:72px;
+  border-radius:50%;
+  background:#020617;
+  padding:10px;
+}
+.perfil-info{
+  font-size:14px;
+  color:var(--muted);
+  line-height:1.6;
+  margin-bottom:18px;
 }
 .modal-actions{
   display:flex;
@@ -207,9 +239,7 @@ form button{
 <body>
 
 <div id="splash">
-  <div class="splash-logo">
-    <span>C</span><span>lena</span>
-  </div>
+  <div class="splash-logo"><span>C</span><span>lena</span></div>
 </div>
 
 <header>
@@ -223,22 +253,26 @@ form button{
 </header>
 
 <div class="card">
-
 <form id="qrForm">
   <input id="nome" placeholder="Nome do QR" required>
   <input id="destino" placeholder="URL de destino" required>
-  <button>Gerar</button>
+  <button id="btnGerar">
+    <span class="btn-text">Gerar</span>
+    <span class="btn-spinner"></span>
+  </button>
 </form>
 
 <div class="grid" id="lista"></div>
-
 </div>
 
 <!-- PERFIL -->
 <div class="modal" id="perfilModal">
   <div class="modal-box">
-    <h3>Meu perfil</h3>
-    <div class="meta" id="perfilInfo"></div>
+    <div class="perfil-header">
+      <img src="logo.png" class="perfil-avatar">
+      <h3>Meu perfil</h3>
+    </div>
+    <div class="perfil-info" id="perfilInfo"></div>
     <div class="modal-actions">
       <button onclick="editarPerfil()">Editar</button>
       <button style="background:var(--danger)" onclick="logout()">Sair</button>
@@ -247,24 +281,21 @@ form button{
 </div>
 
 <script>
-/* 🔐 BLINDAGEM */
 const usuario = localStorage.getItem("usuario_email");
-if(!usuario){ location.replace("login.html"); }
+if(!usuario) location.replace("login.html");
 
-/* SPLASH */
 setTimeout(()=>{
   splash.style.display="none";
   document.body.style.display="block";
-},1600);
+},1500);
 
-/* API */
 const API_CREATE="https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
 const API_REDIRECT="https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
 const REST_QR="https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes";
 const REST_USERS="https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/usuarios";
 const API_KEY="sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
 
-let dados=[], perfil={};
+let dados=[];
 
 /* PERFIL */
 async function abrirPerfil(){
@@ -272,17 +303,15 @@ async function abrirPerfil(){
     REST_USERS+"?email=eq."+encodeURIComponent(usuario),
     {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}}
   );
-  perfil = (await r.json())[0];
+  const p=(await r.json())[0];
   perfilInfo.innerHTML=`
-    <strong>Email:</strong> ${perfil.email}<br>
-    <strong>CPF:</strong> ${perfil.cpf || "-"}<br>
-    <strong>WhatsApp:</strong> ${perfil.whatsapp || "-"}
+    <strong>Email:</strong> ${p.email}<br>
+    <strong>CPF:</strong> ${p.cpf||"-"}<br>
+    <strong>WhatsApp:</strong> ${p.whatsapp||"-"}
   `;
   perfilModal.style.display="flex";
 }
-function editarPerfil(){
-  alert("Próximo passo: edição de perfil 😉");
-}
+function editarPerfil(){alert("Edição em breve 😉")}
 function logout(){
   localStorage.removeItem("usuario_email");
   location.replace("login.html");
@@ -293,6 +322,8 @@ function gerarSlug(){return Math.random().toString(36).substring(2,10);}
 
 qrForm.onsubmit=async e=>{
   e.preventDefault();
+  btnGerar.classList.add("loading");
+
   const slug=gerarSlug();
   const canvas=document.createElement("canvas");
   await QRCode.toCanvas(canvas,API_REDIRECT+slug,{width:512});
@@ -310,7 +341,8 @@ qrForm.onsubmit=async e=>{
   });
 
   nome.value="";destino.value="";
-  carregar();
+  await carregar();
+  btnGerar.classList.remove("loading");
 };
 
 async function carregar(){
@@ -318,7 +350,8 @@ async function carregar(){
     REST_QR+"?email=eq."+encodeURIComponent(usuario)+"&ativo=eq.true&order=criado_em.desc",
     {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}}
   );
-  dados=await r.json();
+  const json=await r.json();
+  dados=Array.isArray(json)?json:[];
   render();
 }
 
@@ -338,7 +371,6 @@ function render(){
       <div class="actions">
         <button class="open" onclick="window.open('${API_REDIRECT+qr.slug}')">Abrir</button>
         <button class="copy" onclick="copyImg('${qr.imagem_url}')">Copiar</button>
-        <button class="edit" onclick="editar('${qr.id}','${qr.nome}','${qr.destino}')">Editar</button>
         <button class="del" onclick="excluir('${qr.id}')">Excluir</button>
       </div>
     </div>`;
