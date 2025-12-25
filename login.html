@@ -4,12 +4,18 @@
 <meta charset="UTF-8">
 <title>Login | CLENA</title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif}
-html,body{margin:0;height:100%}
+html,body{
+  margin:0;
+  height:100%;
+  touch-action:manipulation; /* 🔒 bloqueia zoom */
+}
 
 :root{
   --bg:#0b1020;
@@ -50,7 +56,6 @@ body{
   gap:10px;
   margin-bottom:32px;
 }
-
 .logo-text{
   font-size:30px;
   font-weight:900;
@@ -59,7 +64,12 @@ body{
 
 /* FORM */
 .group{margin-bottom:20px}
-label{font-size:14px;color:var(--muted);margin-bottom:6px;display:block}
+label{
+  font-size:14px;
+  color:var(--muted);
+  margin-bottom:6px;
+  display:block
+}
 
 input{
   width:100%;
@@ -70,7 +80,10 @@ input{
   background:rgba(0,0,0,.35);
   color:#fff;
 }
-input:focus{outline:none;border-color:var(--primary)}
+input:focus{
+  outline:none;
+  border-color:var(--primary)
+}
 
 .btn{
   width:100%;
@@ -94,13 +107,18 @@ input:focus{outline:none;border-color:var(--primary)}
   color:var(--muted);
 }
 
-.msg{margin-top:14px;min-height:20px;font-size:14px}
+.msg{
+  margin-top:14px;
+  min-height:20px;
+  font-size:14px
+}
 .msg.error{color:var(--error)}
 .msg.success{color:var(--success)}
 
 /* MODAL */
 .modal{
-  position:fixed;inset:0;
+  position:fixed;
+  inset:0;
   background:rgba(0,0,0,.85);
   display:none;
   align-items:center;
@@ -125,10 +143,15 @@ input:focus{outline:none;border-color:var(--primary)}
   animation:fadeUp .4s ease;
 }
 .check{
-  width:72px;height:72px;border-radius:50%;
+  width:72px;
+  height:72px;
+  border-radius:50%;
   background:var(--success);
-  display:flex;align-items:center;justify-content:center;
-  font-size:38px;color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:38px;
+  color:#fff;
   animation:pop .5s ease;
 }
 @keyframes pop{
@@ -156,8 +179,10 @@ input:focus{outline:none;border-color:var(--primary)}
         </linearGradient>
       </defs>
       <path d="M90 30 A40 40 0 1 0 90 90"
-        fill="none" stroke="url(#gradC)"
-        stroke-width="14" stroke-linecap="round"/>
+        fill="none"
+        stroke="url(#gradC)"
+        stroke-width="14"
+        stroke-linecap="round"/>
     </svg>
     <div class="logo-text">clena</div>
   </div>
@@ -182,11 +207,30 @@ input:focus{outline:none;border-color:var(--primary)}
   <div class="modal-box">
     <h2>Criar conta</h2>
 
-    <div class="group"><label>Email</label><input id="c_email"></div>
-    <div class="group"><label>CPF</label><input id="c_cpf"></div>
-    <div class="group"><label>WhatsApp</label><input id="c_whats"></div>
-    <div class="group"><label>Senha</label><input id="c_senha" type="password"></div>
-    <div class="group"><label>Confirmar senha</label><input id="c_confirma" type="password"></div>
+    <div class="group">
+      <label>Email</label>
+      <input id="c_email" type="email">
+    </div>
+
+    <div class="group">
+      <label>CPF</label>
+      <input id="c_cpf" inputmode="numeric">
+    </div>
+
+    <div class="group">
+      <label>WhatsApp</label>
+      <input id="c_whats" inputmode="numeric">
+    </div>
+
+    <div class="group">
+      <label>Senha</label>
+      <input id="c_senha" type="password">
+    </div>
+
+    <div class="group">
+      <label>Confirmar senha</label>
+      <input id="c_confirma" type="password">
+    </div>
 
     <button id="btnCadastro" class="btn">Cadastrar</button>
     <div class="link" id="fecharCadastro">Cancelar</div>
@@ -209,24 +253,35 @@ c_cpf.oninput=e=>{
   e.target.value=e.target.value.replace(/\D/g,"")
     .replace(/(\d{3})(\d)/,"$1.$2")
     .replace(/(\d{3})(\d)/,"$1.$2")
-    .replace(/(\d{3})(\d{1,2})$/,"$1-$2").slice(0,14);
+    .replace(/(\d{3})(\d{1,2})$/,"$1-$2")
+    .slice(0,14);
 };
 c_whats.oninput=e=>{
   e.target.value=e.target.value.replace(/\D/g,"")
     .replace(/^(\d{2})(\d)/,"($1) $2")
-    .replace(/(\d{5})(\d)/,"$1-$2").slice(0,15);
+    .replace(/(\d{5})(\d)/,"$1-$2")
+    .slice(0,15);
 };
 
 /* LOGIN */
 btnLogin.onclick = async ()=>{
   msg.textContent="";
-  const { data } = await sb.from("usuarios")
+  const { data } = await sb
+    .from("usuarios")
     .select("email,senha")
     .eq("email",email.value.trim())
     .maybeSingle();
 
-  if(!data){ msg.textContent="Usuário não encontrado"; msg.className="msg error"; return; }
-  if(data.senha!==senha.value){ msg.textContent="Senha incorreta"; msg.className="msg error"; return; }
+  if(!data){
+    msg.textContent="Usuário não encontrado";
+    msg.className="msg error";
+    return;
+  }
+  if(data.senha!==senha.value){
+    msg.textContent="Senha incorreta";
+    msg.className="msg error";
+    return;
+  }
 
   localStorage.setItem("usuario_email",data.email);
   location.replace("index.html");
@@ -237,33 +292,28 @@ btnCadastro.onclick = async ()=>{
   msgCadastro.textContent="";
   if(c_senha.value!==c_confirma.value){
     msgCadastro.textContent="As senhas não conferem";
-    msgCadastro.className="msg error";return;
+    msgCadastro.className="msg error";
+    return;
   }
 
-const { error } = await sb.from("usuarios").insert({
-  email: c_email.value.trim(),
-  cpf: c_cpf.value.replace(/\D/g,""),
-  whatsapp: c_whats.value.replace(/\D/g,""),
-  senha: c_senha.value
-});
+  const { error } = await sb.from("usuarios").insert({
+    email:c_email.value.trim(),
+    cpf:c_cpf.value.replace(/\D/g,""),
+    whatsapp:c_whats.value.replace(/\D/g,""),
+    senha:c_senha.value
+  });
 
-if(error){
-  console.error(error);
-
-  if(error.code === "23505"){
-    msgCadastro.textContent = "Este email já está cadastrado";
-  } 
-  else if(error.code === "23514"){
-    msgCadastro.textContent = "A senha deve ter no mínimo 4 caracteres";
-  } 
-  else {
-    msgCadastro.textContent = error.message;
+  if(error){
+    if(error.code==="23505"){
+      msgCadastro.textContent="Este email já está cadastrado";
+    }else if(error.code==="23514"){
+      msgCadastro.textContent="A senha deve ter no mínimo 4 caracteres";
+    }else{
+      msgCadastro.textContent=error.message;
+    }
+    msgCadastro.className="msg error";
+    return;
   }
-
-  msgCadastro.className="msg error";
-  return;
-}
-
 
   msgCadastro.innerHTML=`
     <div class="success-anim">
