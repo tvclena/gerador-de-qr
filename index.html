@@ -7,6 +7,10 @@
 <meta name="viewport"
   content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
+<!-- CONFIG -->
+<script src="config.js"></script>
+
+<!-- QRCode -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
@@ -297,9 +301,12 @@ form button{
 </div>
 
 <script>
+const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.CONFIG;
+
 const usuario = localStorage.getItem("usuario_email");
 if(!usuario) location.replace("login.html");
 
+/* SPLASH */
 setTimeout(()=>{
   splash.style.display="none";
   document.body.style.display="block";
@@ -309,12 +316,11 @@ let dados=[], editId=null;
 
 /* PERFIL */
 async function abrirPerfil(){
-  const r = await fetch("/api/perfil",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ email:usuario })
-  });
-  const p = await r.json();
+  const r = await fetch(
+    SUPABASE_URL + "/rest/v1/usuarios?email=eq." + encodeURIComponent(usuario),
+    { headers:{ apikey: SUPABASE_ANON_KEY, Authorization:"Bearer "+SUPABASE_ANON_KEY } }
+  );
+  const p = (await r.json())[0];
   perfilInfo.innerHTML = `<strong>Email:</strong> ${p.email}`;
   perfilModal.style.display="flex";
 }
@@ -324,9 +330,7 @@ function logout(){
 }
 
 /* QR */
-function gerarSlug(){
-  return Math.random().toString(36).substring(2,10);
-}
+function gerarSlug(){return Math.random().toString(36).substring(2,10)}
 
 qrForm.onsubmit = async e=>{
   e.preventDefault();
@@ -336,17 +340,20 @@ qrForm.onsubmit = async e=>{
   const canvas = document.createElement("canvas");
   await QRCode.toCanvas(canvas, location.origin+"/r/"+slug,{width:512});
 
-  await fetch("/api/qr-create",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      nome:nome.value,
-      slug,
-      destino:destino.value,
-      imagem:canvas.toDataURL("image/png"),
-      email:usuario
-    })
-  });
+  await fetch(
+    SUPABASE_URL + "/functions/v1/create",
+    {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({
+        nome:nome.value,
+        slug,
+        destino:destino.value,
+        imagem:canvas.toDataURL("image/png"),
+        email:usuario
+      })
+    }
+  );
 
   nome.value=""; destino.value="";
   await carregar();
@@ -354,11 +361,10 @@ qrForm.onsubmit = async e=>{
 };
 
 async function carregar(){
-  const r = await fetch("/api/qr-list",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ email:usuario })
-  });
+  const r = await fetch(
+    SUPABASE_URL + "/rest/v1/qr_codes?email=eq."+encodeURIComponent(usuario)+"&ativo=eq.true&order=criado_em.desc",
+    { headers:{ apikey: SUPABASE_ANON_KEY, Authorization:"Bearer "+SUPABASE_ANON_KEY } }
+  );
   dados = await r.json();
   render();
 }
@@ -390,26 +396,36 @@ function editar(id,nome,dest){
 function fecharEdit(){editModal.style.display="none"}
 
 async function salvarEdit(){
-  await fetch("/api/qr-update",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      id:editId,
-      nome:editNome.value,
-      destino:editDestino.value
-    })
-  });
+  await fetch(
+    SUPABASE_URL + "/rest/v1/qr_codes?id=eq."+editId,
+    {
+      method:"PATCH",
+      headers:{
+        "Content-Type":"application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization:"Bearer "+SUPABASE_ANON_KEY
+      },
+      body:JSON.stringify({ nome:editNome.value, destino:editDestino.value })
+    }
+  );
   fecharEdit();
   carregar();
 }
 
 async function excluir(id){
-  if(!confirm("Excluir QR?")) return;
-  await fetch("/api/qr-delete",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ id })
-  });
+  if(!confirm("Excluir QR?"))return;
+  await fetch(
+    SUPABASE_URL + "/rest/v1/qr_codes?id=eq."+id,
+    {
+      method:"PATCH",
+      headers:{
+        "Content-Type":"application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization:"Bearer "+SUPABASE_ANON_KEY
+      },
+      body:JSON.stringify({ ativo:false })
+    }
+  );
   carregar();
 }
 
