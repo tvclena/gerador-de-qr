@@ -239,9 +239,12 @@ input:focus{
 </div>
 
 <script>
+const SUPABASE_URL = window.ENV_SUPABASE_URL;
+const SUPABASE_ANON_KEY = window.ENV_SUPABASE_ANON_KEY;
+
 const sb = supabase.createClient(
-  "https://fcehmjmtxqmrjkuqlkay.supabase.co",
-  "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
 );
 
 /* MODAL */
