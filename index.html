@@ -2,9 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Gerador de QR Code • CLENA</title>
+<title>CLENA QR • Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
@@ -12,32 +11,29 @@
 body{
   margin:0;
   min-height:100vh;
-  background:
-    radial-gradient(circle at top,#0b132b,#000 60%);
+  background:radial-gradient(circle at top,#0b132b,#000 60%);
   color:#fff;
-  padding:40px 20px;
+  padding:32px 20px;
 }
 
-/* ===== HEADER ===== */
+/* HEADER */
 header{
   max-width:1200px;
-  margin:0 auto 30px;
+  margin:auto;
   display:flex;
-  align-items:center;
   justify-content:space-between;
+  align-items:center;
+  margin-bottom:24px;
 }
-header h1{
-  font-size:28px;
-  font-weight:800;
-}
-header h1 span{color:#22c55e}
+header h1{font-size:28px;font-weight:800}
+header span{color:#22c55e}
 
-/* ===== SEARCH ===== */
+/* SEARCH */
 .search{
   background:#020617;
   border-radius:999px;
   padding:10px 18px;
-  width:280px;
+  width:260px;
 }
 .search input{
   width:100%;
@@ -45,10 +41,9 @@ header h1 span{color:#22c55e}
   border:none;
   outline:none;
   color:#fff;
-  font-size:14px;
 }
 
-/* ===== CARD ===== */
+/* CARD */
 .card{
   max-width:1200px;
   margin:auto;
@@ -58,37 +53,35 @@ header h1 span{color:#22c55e}
   box-shadow:0 0 50px rgba(0,0,0,.6);
 }
 
-/* ===== FORM ===== */
+/* FORM */
 form{
   display:grid;
   grid-template-columns:1fr 2fr auto;
   gap:14px;
-  margin-bottom:30px;
+  margin-bottom:26px;
 }
 form input{
   padding:14px 16px;
   border-radius:12px;
   border:none;
-  font-size:15px;
 }
 form button{
-  padding:14px 26px;
+  padding:14px 28px;
   border-radius:12px;
   border:none;
   background:#22c55e;
-  color:#000;
   font-weight:800;
   cursor:pointer;
 }
 
-/* ===== GRID ===== */
+/* GRID */
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
   gap:22px;
 }
 
-/* ===== QR CARD ===== */
+/* QR CARD */
 .qr-card{
   background:#020617;
   border-radius:18px;
@@ -97,56 +90,39 @@ form button{
 }
 .qr-card:hover{
   transform:scale(1.05);
-  box-shadow:0 20px 40px rgba(0,0,0,.6);
 }
 .qr-card img{
   width:100%;
-  background:#fff;
   border-radius:12px;
-  margin-bottom:12px;
-}
-.qr-card h4{
-  margin:6px 0;
-  font-size:16px;
+  background:#fff;
+  margin-bottom:10px;
 }
 .meta{
   font-size:13px;
   color:#94a3b8;
-  margin-bottom:12px;
-  line-height:1.5;
 }
 
-/* ===== ACTIONS ===== */
+/* ACTIONS */
 .actions{
   display:flex;
   gap:8px;
+  margin-top:10px;
 }
 .actions button{
   flex:1;
   padding:10px;
   border:none;
   border-radius:10px;
-  font-size:13px;
   font-weight:700;
   cursor:pointer;
 }
-.btn-open{background:#334155;color:#fff}
-.btn-copy{background:#eab308;color:#000}
-.btn-del{background:#e50914;color:#fff}
+.open{background:#334155;color:#fff}
+.copy{background:#eab308}
+.del{background:#e50914;color:#fff}
 
-/* ===== MOBILE ===== */
 @media(max-width:768px){
-  header{
-    flex-direction:column;
-    gap:14px;
-    align-items:flex-start;
-  }
-  form{
-    grid-template-columns:1fr;
-  }
-  .search{
-    width:100%;
-  }
+  form{grid-template-columns:1fr}
+  .search{width:100%}
 }
 </style>
 </head>
@@ -156,48 +132,39 @@ form button{
 <header>
   <h1>CLENA <span>QR</span></h1>
   <div class="search">
-    <input id="search" placeholder="Buscar QR pelo nome…">
+    <input id="search" placeholder="Buscar QR…">
   </div>
 </header>
 
 <div class="card">
 
-  <form id="qrForm">
-    <input id="nome" placeholder="Nome do QR">
-    <input id="destino" placeholder="URL de destino">
-    <button type="submit">Gerar</button>
-  </form>
+<form id="qrForm">
+  <input id="nome" placeholder="Nome do QR">
+  <input id="destino" placeholder="URL de destino">
+  <button>Gerar</button>
+</form>
 
-  <div class="grid" id="lista"></div>
+<div class="grid" id="lista"></div>
 
 </div>
 
 <script>
-/* ===== CONFIG (IGUAL AO SEU EXEMPLO) ===== */
-const API_CREATE =
-  "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
-const API_REDIRECT =
-  "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
-const REST_QR =
-  "https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes";
+const API_CREATE = "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
+const API_REDIRECT = "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
+const REST_QR = "https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes";
+const API_KEY = "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
 
-const API_KEY =
-  "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
-
-/* ===== DOM ===== */
 const lista = document.getElementById("lista");
-const form = document.getElementById("qrForm");
 const search = document.getElementById("search");
+const form = document.getElementById("qrForm");
 
-let dados = [];
+let dados=[];
 
-/* ===== UTIL ===== */
 function gerarSlug(){
   return Math.random().toString(36).substring(2,10);
 }
 
-/* ===== GERAR ===== */
-form.addEventListener("submit", async e=>{
+form.onsubmit = async e=>{
   e.preventDefault();
 
   const nome = nomeInput.value.trim();
@@ -205,112 +172,76 @@ form.addEventListener("submit", async e=>{
   if(!nome || !destino) return alert("Preencha tudo");
 
   const slug = gerarSlug();
-
   const canvas = document.createElement("canvas");
   await QRCode.toCanvas(canvas, API_REDIRECT + slug, { width:512 });
+  const imagem = canvas.toDataURL("image/png");
 
-const imagem = canvas.toDataURL("image/png");
-
-const res = await fetch(API_CREATE,{
-  method:"POST",
-  headers:{ "Content-Type":"application/json" },
-  body:JSON.stringify({
-    nome,
-    slug,
-    destino,
-    imagem // 🔥 agora existe e bate com a Edge Function
-  })
-});
-;
-
-
-  if(!res.ok){
-    alert("Erro ao criar QR");
-    return;
-  }
+  await fetch(API_CREATE,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ nome, slug, destino, imagem })
+  });
 
   nomeInput.value="";
   destinoInput.value="";
   carregar();
-});
+};
 
-/* ===== LISTAR ===== */
 async function carregar(){
   const res = await fetch(
-    REST_QR + "?ativo=eq.true&order=criado_em.desc",
+    REST_QR+"?ativo=eq.true&order=criado_em.desc",
     { headers:{ apikey:API_KEY } }
   );
-
   dados = await res.json();
   render();
 }
 
-/* ===== RENDER ===== */
 function render(){
-  const q = search.value.toLowerCase();
   lista.innerHTML="";
+  const q = search.value.toLowerCase();
 
-  dados
-    .filter(d=>d.nome.toLowerCase().includes(q))
-    .forEach(qr=>{
-      lista.innerHTML += `
-        <div class="qr-card">
-          <img src="${qr.imagem_url}">
-          <h4>${qr.nome}</h4>
-          <div class="meta">
-            Slug: ${qr.slug}<br>
-            Acessos: ${qr.acessos}<br>
-            ${new Date(qr.criado_em).toLocaleDateString("pt-BR")}
-          </div>
-          <div class="actions">
-            <button class="btn-open"
-              onclick="window.open('${API_REDIRECT + qr.slug}')">
-              Abrir
-            </button>
-            <button class="btn-copy"
-              onclick="copiar('${qr.imagem_url}')">
-              Copiar
-            </button>
-            <button class="btn-del"
-              onclick="excluir('${qr.id}')">
-              Excluir
-            </button>
-          </div>
+  dados.filter(d=>d.nome.toLowerCase().includes(q)).forEach(qr=>{
+    lista.innerHTML += `
+      <div class="qr-card">
+        <img src="${qr.imagem_url}" onerror="this.src='https://placehold.co/400x400?text=QR'">
+        <strong>${qr.nome}</strong>
+        <div class="meta">
+          Slug: ${qr.slug}<br>
+          Acessos: ${qr.acessos}<br>
+          ${new Date(qr.criado_em).toLocaleDateString("pt-BR")}
         </div>
-      `;
-    });
+        <div class="actions">
+          <button class="open" onclick="open('${qr.slug}')">Abrir</button>
+          <button class="copy" onclick="copyImg('${qr.imagem_url}')">Copiar</button>
+          <button class="del" onclick="del('${qr.id}')">Excluir</button>
+        </div>
+      </div>`;
+  });
 }
 
-/* ===== COPIAR IMAGEM ===== */
-async function copiar(url){
-  const res = await fetch(url);
-  const blob = await res.blob();
-  await navigator.clipboard.write([
-    new ClipboardItem({ [blob.type]: blob })
-  ]);
+function open(slug){
+  window.open(API_REDIRECT+slug);
+}
+
+async function copyImg(url){
+  const b = await (await fetch(url)).blob();
+  await navigator.clipboard.write([new ClipboardItem({[b.type]:b})]);
   alert("QR copiado!");
 }
 
-/* ===== EXCLUIR ===== */
-async function excluir(id){
+async function del(id){
   if(!confirm("Excluir QR?")) return;
-
-  await fetch(
-    REST_QR + "?id=eq." + id,
-    {
-      method:"PATCH",
-      headers:{
-        apikey:API_KEY,
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({ ativo:false })
-    }
-  );
-
+  await fetch(REST_QR+"?id=eq."+id,{
+    method:"PATCH",
+    headers:{
+      apikey:API_KEY,
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({ativo:false})
+  });
   carregar();
 }
 
-/* ===== SEARCH ===== */
 search.oninput = render;
 
 const nomeInput = document.getElementById("nome");
@@ -318,5 +249,6 @@ const destinoInput = document.getElementById("destino");
 
 carregar();
 </script>
+
 </body>
 </html>
