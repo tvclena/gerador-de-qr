@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>CLENA QR • Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
@@ -51,7 +50,6 @@ header span{color:#22c55e}
   background:#0f172a;
   border-radius:22px;
   padding:26px;
-  box-shadow:0 0 50px rgba(0,0,0,.6);
 }
 
 /* FORM */
@@ -87,27 +85,28 @@ form button{
   background:#020617;
   border-radius:18px;
   padding:16px;
-  transition:.25s;
+  display:flex;
+  flex-direction:column;
+  min-height:420px;
 }
-.qr-card:hover{transform:scale(1.05)}
 .qr-card img{
   width:100%;
-  border-radius:12px;
   background:#fff;
+  border-radius:12px;
   margin-bottom:10px;
 }
 .meta{
   font-size:13px;
   color:#94a3b8;
-  line-height:1.4;
-  word-break:break-all;
+  margin-bottom:12px;
+  word-break:break-word;
 }
 
 /* ACTIONS */
 .actions{
   display:flex;
   gap:8px;
-  margin-top:10px;
+  margin-top:auto;
 }
 .actions button{
   flex:1;
@@ -130,23 +129,22 @@ form button{
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:999;
 }
 .modal.active{display:flex}
 .modal-box{
   background:#020617;
-  border-radius:18px;
-  padding:24px;
+  padding:22px;
+  border-radius:16px;
   width:100%;
   max-width:420px;
 }
 .modal-box h3{margin-top:0}
 .modal-box input{
   width:100%;
+  margin-bottom:12px;
   padding:12px;
   border-radius:10px;
   border:none;
-  margin-bottom:12px;
 }
 .modal-actions{
   display:flex;
@@ -154,9 +152,9 @@ form button{
 }
 .modal-actions button{
   flex:1;
-  padding:12px;
-  border:none;
+  padding:10px;
   border-radius:10px;
+  border:none;
   font-weight:700;
   cursor:pointer;
 }
@@ -175,7 +173,7 @@ form button{
 <header>
   <h1>CLENA <span>QR</span></h1>
   <div class="search">
-    <input id="search" placeholder="Buscar QR…">
+    <input id="search" placeholder="Buscar QR...">
   </div>
 </header>
 
@@ -188,15 +186,14 @@ form button{
 </form>
 
 <div class="grid" id="lista"></div>
-
 </div>
 
 <!-- MODAL EDIT -->
 <div class="modal" id="modal">
   <div class="modal-box">
     <h3>Editar QR Code</h3>
-    <input id="editNome" placeholder="Nome do QR">
-    <input id="editDestino" placeholder="URL de destino">
+    <input id="editNome" placeholder="Nome">
+    <input id="editDestino" placeholder="Destino">
     <div class="modal-actions">
       <button class="save" onclick="salvarEdicao()">Salvar</button>
       <button class="cancel" onclick="fecharModal()">Cancelar</button>
@@ -212,16 +209,37 @@ const API_KEY="sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
 
 const lista=document.getElementById("lista");
 const search=document.getElementById("search");
-const nomeInput=document.getElementById("nome");
-const destinoInput=document.getElementById("destino");
+let dados=[], editId=null;
 
-let dados=[];
-let editId=null;
+function gerarSlug(){
+  return Math.random().toString(36).substring(2,10);
+}
 
-/* CRUD */
+document.getElementById("qrForm").onsubmit=async e=>{
+  e.preventDefault();
+  const nome=nomeInput.value.trim();
+  const destino=destinoInput.value.trim();
+  if(!nome||!destino) return alert("Preencha tudo");
+
+  const slug=gerarSlug();
+  const canvas=document.createElement("canvas");
+  await QRCode.toCanvas(canvas,API_REDIRECT+slug,{width:512});
+  const imagem=canvas.toDataURL("image/png");
+
+  await fetch(API_CREATE,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({nome,slug,destino,imagem})
+  });
+
+  nomeInput.value="";
+  destinoInput.value="";
+  carregar();
+};
+
 async function carregar(){
-  const res=await fetch(REST_QR+"?ativo=eq.true&order=criado_em.desc",{headers:{apikey:API_KEY}});
-  dados=await res.json();
+  const r=await fetch(REST_QR+"?ativo=eq.true&order=criado_em.desc",{headers:{apikey:API_KEY}});
+  dados=await r.json();
   render();
 }
 
@@ -230,52 +248,56 @@ function render(){
   const q=search.value.toLowerCase();
   dados.filter(d=>d.nome.toLowerCase().includes(q)).forEach(qr=>{
     lista.innerHTML+=`
-    <div class="qr-card">
-      <img src="${qr.imagem_url}" onerror="this.src='https://placehold.co/400x400?text=QR'">
-      <strong>${qr.nome}</strong>
-      <div class="meta">
-        Destino:<br>${qr.destino}<br><br>
-        Slug: ${qr.slug}<br>
-        Acessos: ${qr.acessos}
-      </div>
-      <div class="actions">
-        <button class="open" onclick="window.open('${API_REDIRECT+qr.slug}')">Abrir</button>
-        <button class="copy" onclick="copiar('${qr.imagem_url}')">Copiar</button>
-        <button class="edit" onclick="abrirModal('${qr.id}','${qr.nome}','${qr.destino}')">Editar</button>
-        <button class="del" onclick="excluir('${qr.id}')">Excluir</button>
-      </div>
-    </div>`;
+      <div class="qr-card">
+        <img src="${qr.imagem_url}">
+        <strong>${qr.nome}</strong>
+        <div class="meta">
+          Destino: ${qr.destino}<br>
+          Slug: ${qr.slug}<br>
+          Acessos: ${qr.acessos}
+        </div>
+        <div class="actions">
+          <button class="open" onclick="window.open('${API_REDIRECT+qr.slug}')">Abrir</button>
+          <button class="copy" onclick="copiar('${qr.imagem_url}')">Copiar</button>
+          <button class="edit" onclick="editar('${qr.id}','${qr.nome}','${qr.destino}')">Editar</button>
+          <button class="del" onclick="excluir('${qr.id}')">Excluir</button>
+        </div>
+      </div>`;
   });
 }
 
-/* MODAL */
-function abrirModal(id,nome,destino){
+function editar(id,nome,destino){
   editId=id;
   editNome.value=nome;
   editDestino.value=destino;
   modal.classList.add("active");
 }
-function fecharModal(){
-  modal.classList.remove("active");
-}
+
 async function salvarEdicao(){
   await fetch(REST_QR+"?id=eq."+editId,{
     method:"PATCH",
     headers:{apikey:API_KEY,"Content-Type":"application/json"},
-    body:JSON.stringify({nome:editNome.value,destino:editDestino.value})
+    body:JSON.stringify({
+      nome:editNome.value,
+      destino:editDestino.value
+    })
   });
   fecharModal();
   carregar();
 }
 
-/* OUTROS */
+function fecharModal(){
+  modal.classList.remove("active");
+}
+
 async function copiar(url){
   const b=await (await fetch(url)).blob();
   await navigator.clipboard.write([new ClipboardItem({[b.type]:b})]);
   alert("QR copiado!");
 }
+
 async function excluir(id){
-  if(!confirm("Excluir QR?")) return;
+  if(!confirm("Excluir QR?"))return;
   await fetch(REST_QR+"?id=eq."+id,{
     method:"PATCH",
     headers:{apikey:API_KEY,"Content-Type":"application/json"},
@@ -285,8 +307,13 @@ async function excluir(id){
 }
 
 search.oninput=render;
+const nomeInput=document.getElementById("nome");
+const destinoInput=document.getElementById("destino");
+const modal=document.getElementById("modal");
+const editNome=document.getElementById("editNome");
+const editDestino=document.getElementById("editDestino");
+
 carregar();
 </script>
-
 </body>
 </html>
