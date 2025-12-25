@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Gerador de QR Code</title>
+<title>Gerador de QR Code • CLENA</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -10,94 +10,155 @@
 <style>
 *{box-sizing:border-box;font-family:Inter,Arial}
 body{
-  background:radial-gradient(circle at top,#0b132b,#000);
-  min-height:100vh;
   margin:0;
-  padding:30px;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at top,#0b132b,#000 60%);
   color:#fff;
+  padding:40px 20px;
 }
-h1{text-align:center;margin-bottom:24px}
 
+/* ===== HEADER ===== */
+header{
+  max-width:1200px;
+  margin:0 auto 30px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+header h1{
+  font-size:28px;
+  font-weight:800;
+}
+header h1 span{color:#22c55e}
+
+/* ===== SEARCH ===== */
+.search{
+  background:#020617;
+  border-radius:999px;
+  padding:10px 18px;
+  width:280px;
+}
+.search input{
+  width:100%;
+  background:none;
+  border:none;
+  outline:none;
+  color:#fff;
+  font-size:14px;
+}
+
+/* ===== CARD ===== */
 .card{
-  max-width:980px;
+  max-width:1200px;
   margin:auto;
   background:#0f172a;
-  border-radius:18px;
-  padding:28px;
-  box-shadow:0 0 40px rgba(0,0,0,.6);
+  border-radius:22px;
+  padding:26px;
+  box-shadow:0 0 50px rgba(0,0,0,.6);
 }
 
+/* ===== FORM ===== */
 form{
   display:grid;
   grid-template-columns:1fr 2fr auto;
-  gap:12px;
+  gap:14px;
   margin-bottom:30px;
 }
-
-input{
-  padding:12px;
-  border-radius:10px;
+form input{
+  padding:14px 16px;
+  border-radius:12px;
   border:none;
   font-size:15px;
 }
-
-button{
-  padding:12px 18px;
-  border-radius:10px;
+form button{
+  padding:14px 26px;
+  border-radius:12px;
   border:none;
   background:#22c55e;
   color:#000;
-  font-weight:700;
+  font-weight:800;
   cursor:pointer;
 }
 
+/* ===== GRID ===== */
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-  gap:20px;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  gap:22px;
 }
 
+/* ===== QR CARD ===== */
 .qr-card{
   background:#020617;
-  border-radius:14px;
-  padding:14px;
+  border-radius:18px;
+  padding:16px;
   transition:.25s;
 }
 .qr-card:hover{
-  transform:scale(1.04);
+  transform:scale(1.05);
+  box-shadow:0 20px 40px rgba(0,0,0,.6);
 }
-
 .qr-card img{
   width:100%;
   background:#fff;
-  border-radius:10px;
-  margin-bottom:10px;
+  border-radius:12px;
+  margin-bottom:12px;
 }
-
-.qr-card h4{margin:6px 0}
+.qr-card h4{
+  margin:6px 0;
+  font-size:16px;
+}
 .meta{
   font-size:13px;
   color:#94a3b8;
-  margin-bottom:10px;
+  margin-bottom:12px;
+  line-height:1.5;
 }
 
+/* ===== ACTIONS ===== */
 .actions{
   display:flex;
   gap:8px;
 }
 .actions button{
   flex:1;
-  padding:8px;
+  padding:10px;
+  border:none;
+  border-radius:10px;
   font-size:13px;
+  font-weight:700;
+  cursor:pointer;
 }
-.btn-del{background:#e50914;color:#fff}
 .btn-open{background:#334155;color:#fff}
+.btn-copy{background:#eab308;color:#000}
+.btn-del{background:#e50914;color:#fff}
+
+/* ===== MOBILE ===== */
+@media(max-width:768px){
+  header{
+    flex-direction:column;
+    gap:14px;
+    align-items:flex-start;
+  }
+  form{
+    grid-template-columns:1fr;
+  }
+  .search{
+    width:100%;
+  }
+}
 </style>
 </head>
 
 <body>
 
-<h1>📲 Gerador de QR Code</h1>
+<header>
+  <h1>CLENA <span>QR</span></h1>
+  <div class="search">
+    <input id="search" placeholder="Buscar QR pelo nome…">
+  </div>
+</header>
 
 <div class="card">
 
@@ -112,37 +173,48 @@ button{
 </div>
 
 <script>
+/* ===== CONFIG (IGUAL AO SEU EXEMPLO) ===== */
 const API_CREATE =
   "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
 const API_REDIRECT =
   "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
+const REST_QR =
+  "https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes";
 
+const API_KEY =
+  "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
+
+/* ===== DOM ===== */
 const lista = document.getElementById("lista");
 const form = document.getElementById("qrForm");
+const search = document.getElementById("search");
 
+let dados = [];
+
+/* ===== UTIL ===== */
 function gerarSlug(){
   return Math.random().toString(36).substring(2,10);
 }
 
+/* ===== GERAR ===== */
 form.addEventListener("submit", async e=>{
   e.preventDefault();
 
-  const nome = document.getElementById("nome").value.trim();
-  const destino = document.getElementById("destino").value.trim();
+  const nome = nomeInput.value.trim();
+  const destino = destinoInput.value.trim();
   if(!nome || !destino) return alert("Preencha tudo");
 
   const slug = gerarSlug();
 
-  // gera QR em canvas
   const canvas = document.createElement("canvas");
   await QRCode.toCanvas(canvas, API_REDIRECT + slug, { width:512 });
 
-  const imgBase64 = canvas.toDataURL("image/png");
+  const image = canvas.toDataURL("image/png");
 
   const res = await fetch(API_CREATE,{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ nome, slug, destino, image: imgBase64 })
+    body:JSON.stringify({ nome, slug, destino, image })
   });
 
   if(!res.ok){
@@ -150,58 +222,78 @@ form.addEventListener("submit", async e=>{
     return;
   }
 
-  document.getElementById("nome").value="";
-  document.getElementById("destino").value="";
+  nomeInput.value="";
+  destinoInput.value="";
   carregar();
 });
 
+/* ===== LISTAR ===== */
 async function carregar(){
   const res = await fetch(
-    "https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes?ativo=eq.true&order=criado_em.desc",
-    {
-      headers:{
-        apikey:"sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
-      }
-    }
+    REST_QR + "?ativo=eq.true&order=criado_em.desc",
+    { headers:{ apikey:API_KEY } }
   );
 
-  const data = await res.json();
-  lista.innerHTML="";
-
-  data.forEach(q=>{
-    lista.innerHTML += `
-      <div class="qr-card">
-        <img src="${q.imagem_url}">
-        <h4>${q.nome}</h4>
-        <div class="meta">
-          Slug: ${q.slug}<br>
-          Acessos: ${q.acessos}<br>
-          ${new Date(q.criado_em).toLocaleDateString("pt-BR")}
-        </div>
-        <div class="actions">
-          <button class="btn-open"
-            onclick="window.open('${API_REDIRECT + q.slug}')">
-            Abrir
-          </button>
-          <button class="btn-del"
-            onclick="excluir('${q.id}')">
-            Excluir
-          </button>
-        </div>
-      </div>
-    `;
-  });
+  dados = await res.json();
+  render();
 }
 
+/* ===== RENDER ===== */
+function render(){
+  const q = search.value.toLowerCase();
+  lista.innerHTML="";
+
+  dados
+    .filter(d=>d.nome.toLowerCase().includes(q))
+    .forEach(qr=>{
+      lista.innerHTML += `
+        <div class="qr-card">
+          <img src="${qr.imagem_url}">
+          <h4>${qr.nome}</h4>
+          <div class="meta">
+            Slug: ${qr.slug}<br>
+            Acessos: ${qr.acessos}<br>
+            ${new Date(qr.criado_em).toLocaleDateString("pt-BR")}
+          </div>
+          <div class="actions">
+            <button class="btn-open"
+              onclick="window.open('${API_REDIRECT + qr.slug}')">
+              Abrir
+            </button>
+            <button class="btn-copy"
+              onclick="copiar('${qr.imagem_url}')">
+              Copiar
+            </button>
+            <button class="btn-del"
+              onclick="excluir('${qr.id}')">
+              Excluir
+            </button>
+          </div>
+        </div>
+      `;
+    });
+}
+
+/* ===== COPIAR IMAGEM ===== */
+async function copiar(url){
+  const res = await fetch(url);
+  const blob = await res.blob();
+  await navigator.clipboard.write([
+    new ClipboardItem({ [blob.type]: blob })
+  ]);
+  alert("QR copiado!");
+}
+
+/* ===== EXCLUIR ===== */
 async function excluir(id){
   if(!confirm("Excluir QR?")) return;
 
   await fetch(
-    "https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes?id=eq."+id,
+    REST_QR + "?id=eq." + id,
     {
       method:"PATCH",
       headers:{
-        apikey:"sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o",
+        apikey:API_KEY,
         "Content-Type":"application/json"
       },
       body:JSON.stringify({ ativo:false })
@@ -210,6 +302,12 @@ async function excluir(id){
 
   carregar();
 }
+
+/* ===== SEARCH ===== */
+search.oninput = render;
+
+const nomeInput = document.getElementById("nome");
+const destinoInput = document.getElementById("destino");
 
 carregar();
 </script>
