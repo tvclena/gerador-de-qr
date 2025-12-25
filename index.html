@@ -11,11 +11,7 @@
 
 <style>
 *{box-sizing:border-box;font-family:Inter,Arial}
-html,body{
-  margin:0;
-  height:100%;
-  touch-action:manipulation;
-}
+html,body{margin:0;height:100%;touch-action:manipulation}
 
 :root{
   --bg:#0b1020;
@@ -24,7 +20,6 @@ html,body{
   --primary:#38bdf8;
   --secondary:#7c3aed;
   --muted:#94a3b8;
-  --border:#273469;
   --success:#22c55e;
   --danger:#ef4444;
 }
@@ -62,8 +57,8 @@ header{
   margin:24px auto;
   padding:0 20px;
   display:flex;
-  gap:14px;
   flex-wrap:wrap;
+  gap:14px;
   justify-content:space-between;
   align-items:center;
 }
@@ -181,7 +176,6 @@ form button{
   font-weight:700;cursor:pointer;
 }
 .open{background:#334155;color:#fff}
-.copy{background:#eab308;color:#000}
 .edit{background:#22c55e;color:#000}
 .del{background:var(--danger);color:#fff}
 
@@ -284,8 +278,7 @@ form button{
     </div>
     <div class="perfil-info" id="perfilInfo"></div>
     <div class="modal-actions">
-      <button onclick="editarPerfil()">Editar</button>
-      <button style="background:var(--danger)" onclick="logout()">Sair</button>
+      <button onclick="logout()">Sair</button>
     </div>
   </div>
 </div>
@@ -307,38 +300,39 @@ form button{
 const usuario=localStorage.getItem("usuario_email");
 if(!usuario) location.replace("login.html");
 
-setTimeout(()=>{splash.style.display="none";document.body.style.display="block"},1400);
-
-const API_CREATE="https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
-const API_REDIRECT="https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
-const REST_QR="https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes";
-const REST_USERS="https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/usuarios";
-const API_KEY="sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
+setTimeout(()=>{
+  splash.style.display="none";
+  document.body.style.display="block";
+},1400);
 
 let dados=[], editId=null;
 
+/* PERFIL */
 async function abrirPerfil(){
-  const r=await fetch(REST_USERS+"?email=eq."+encodeURIComponent(usuario),
-  {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}});
-  const p=(await r.json())[0];
+  const r = await fetch("/api/perfil",{method:"POST",headers:{ "Content-Type":"application/json" },body:JSON.stringify({email:usuario})});
+  const p = await r.json();
   perfilInfo.innerHTML=`<strong>Email:</strong> ${p.email}`;
   perfilModal.style.display="flex";
 }
-function editarPerfil(){alert("Em breve 😉")}
-function logout(){localStorage.clear();location.replace("login.html")}
+function logout(){
+  localStorage.clear();
+  location.replace("login.html");
+}
 
+/* QR */
 function gerarSlug(){return Math.random().toString(36).substring(2,10)}
 
 qrForm.onsubmit=async e=>{
   e.preventDefault();
   btnGerar.classList.add("loading");
+
   const slug=gerarSlug();
   const canvas=document.createElement("canvas");
-  await QRCode.toCanvas(canvas,API_REDIRECT+slug,{width:512});
+  await QRCode.toCanvas(canvas, location.origin+"/r/"+slug,{width:512});
 
-  await fetch(API_CREATE,{
+  await fetch("/api/qr-create",{
     method:"POST",
-    headers:{"Content-Type":"application/json"},
+    headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({
       nome:nome.value,
       slug,
@@ -354,24 +348,22 @@ qrForm.onsubmit=async e=>{
 };
 
 async function carregar(){
-  const r=await fetch(
-    REST_QR+"?email=eq."+encodeURIComponent(usuario)+"&ativo=eq.true&order=criado_em.desc",
-    {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}}
-  );
-  dados=await r.json();
+  const r = await fetch("/api/qr-list",{method:"POST",headers:{ "Content-Type":"application/json" },body:JSON.stringify({email:usuario})});
+  dados = await r.json();
   render();
 }
 
 function render(){
   lista.innerHTML="";
-  dados.forEach(qr=>{
+  const q=search.value.toLowerCase();
+  dados.filter(d=>d.nome.toLowerCase().includes(q)).forEach(qr=>{
     lista.innerHTML+=`
     <div class="qr-card">
       <img src="${qr.imagem_url}">
       <strong>${qr.nome}</strong>
       <div class="meta">${qr.destino}</div>
       <div class="actions">
-        <button class="open" onclick="window.open('${API_REDIRECT+qr.slug}')">Abrir</button>
+        <button class="open" onclick="window.open('/r/${qr.slug}')">Abrir</button>
         <button class="edit" onclick="editar('${qr.id}','${qr.nome}','${qr.destino}')">Editar</button>
         <button class="del" onclick="excluir('${qr.id}')">Excluir</button>
       </div>
@@ -388,28 +380,21 @@ function editar(id,nome,dest){
 function fecharEdit(){editModal.style.display="none"}
 
 async function salvarEdit(){
-  await fetch(REST_QR+"?id=eq."+editId,{
-    method:"PATCH",
-    headers:{
-      apikey:API_KEY,
-      Authorization:"Bearer "+API_KEY,
-      "Content-Type":"application/json"
-    },
-    body:JSON.stringify({nome:editNome.value,destino:editDestino.value})
+  await fetch("/api/qr-update",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({id:editId,nome:editNome.value,destino:editDestino.value})
   });
-  fecharEdit();carregar();
+  fecharEdit();
+  carregar();
 }
 
 async function excluir(id){
   if(!confirm("Excluir QR?"))return;
-  await fetch(REST_QR+"?id=eq."+id,{
-    method:"PATCH",
-    headers:{
-      apikey:API_KEY,
-      Authorization:"Bearer "+API_KEY,
-      "Content-Type":"application/json"
-    },
-    body:JSON.stringify({ativo:false})
+  await fetch("/api/qr-delete",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({id})
   });
   carregar();
 }
