@@ -3,13 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <title>CLENA • QR Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Inter,Arial}
-html,body{margin:0;height:100%}
+html,body{
+  margin:0;
+  height:100%;
+  touch-action:manipulation;
+}
 
 :root{
   --bg:#0b1020;
@@ -48,35 +54,33 @@ body{
   background:linear-gradient(135deg,var(--primary),var(--secondary));
   -webkit-background-clip:text;
   -webkit-text-fill-color:transparent;
-  animation:fade .8s ease forwards;
-}
-@keyframes fade{
-  from{opacity:0;transform:scale(.7)}
-  to{opacity:1;transform:scale(1)}
 }
 
 /* HEADER */
 header{
   max-width:1200px;
-  margin:32px auto 24px;
+  margin:24px auto;
   padding:0 20px;
   display:flex;
+  gap:14px;
+  flex-wrap:wrap;
   justify-content:space-between;
   align-items:center;
 }
-header h1{margin:0;font-size:28px;font-weight:900}
+header h1{margin:0;font-size:26px;font-weight:900}
+
 .right{
   display:flex;
-  align-items:center;
-  gap:14px;
+  gap:12px;
+  flex:1;
 }
 
 /* SEARCH */
 .search{
   background:#020617;
   border-radius:999px;
-  padding:10px 18px;
-  width:260px;
+  padding:10px 16px;
+  flex:1;
 }
 .search input{
   width:100%;
@@ -129,11 +133,8 @@ form button{
   position:relative;
 }
 
-/* BOTÃO LOADING */
-#btnGerar.loading{
-  pointer-events:none;
-  opacity:.8;
-}
+/* LOADING BUTTON */
+#btnGerar.loading{pointer-events:none;opacity:.8}
 .btn-spinner{
   width:18px;height:18px;
   border:3px solid rgba(255,255,255,.3);
@@ -176,7 +177,7 @@ form button{
   margin-top:auto;
 }
 .actions button{
-  height:40px;border:none;border-radius:10px;
+  height:42px;border:none;border-radius:10px;
   font-weight:700;cursor:pointer;
 }
 .open{background:#334155;color:#fff}
@@ -197,8 +198,15 @@ form button{
   background:var(--surface);
   padding:26px;
   border-radius:18px;
-  width:100%;
+  width:92%;
   max-width:420px;
+}
+.modal-box input{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  margin-bottom:12px;
 }
 
 /* PERFIL */
@@ -207,7 +215,6 @@ form button{
   flex-direction:column;
   align-items:center;
   gap:10px;
-  margin-bottom:14px;
 }
 .perfil-avatar{
   width:72px;height:72px;
@@ -219,7 +226,7 @@ form button{
   font-size:14px;
   color:var(--muted);
   line-height:1.6;
-  margin-bottom:18px;
+  margin:14px 0;
 }
 .modal-actions{
   display:flex;
@@ -233,6 +240,11 @@ form button{
   font-weight:800;
   cursor:pointer;
 }
+
+/* MOBILE */
+@media(max-width:768px){
+  form{grid-template-columns:1fr}
+}
 </style>
 </head>
 
@@ -245,9 +257,7 @@ form button{
 <header>
   <h1>CLENA <span style="color:var(--primary)">QR</span></h1>
   <div class="right">
-    <div class="search">
-      <input id="search" placeholder="Buscar QR…">
-    </div>
+    <div class="search"><input id="search" placeholder="Buscar QR…"></div>
     <div class="profile-btn" onclick="abrirPerfil()">👤</div>
   </div>
 </header>
@@ -280,14 +290,24 @@ form button{
   </div>
 </div>
 
+<!-- EDITAR QR -->
+<div class="modal" id="editModal">
+  <div class="modal-box">
+    <h3>Editar QR</h3>
+    <input id="editNome">
+    <input id="editDestino">
+    <div class="modal-actions">
+      <button onclick="fecharEdit()">Cancelar</button>
+      <button style="background:var(--success)" onclick="salvarEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <script>
-const usuario = localStorage.getItem("usuario_email");
+const usuario=localStorage.getItem("usuario_email");
 if(!usuario) location.replace("login.html");
 
-setTimeout(()=>{
-  splash.style.display="none";
-  document.body.style.display="block";
-},1500);
+setTimeout(()=>{splash.style.display="none";document.body.style.display="block"},1400);
 
 const API_CREATE="https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
 const API_REDIRECT="https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
@@ -295,35 +315,23 @@ const REST_QR="https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes";
 const REST_USERS="https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/usuarios";
 const API_KEY="sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
 
-let dados=[];
+let dados=[], editId=null;
 
-/* PERFIL */
 async function abrirPerfil(){
-  const r = await fetch(
-    REST_USERS+"?email=eq."+encodeURIComponent(usuario),
-    {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}}
-  );
+  const r=await fetch(REST_USERS+"?email=eq."+encodeURIComponent(usuario),
+  {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}});
   const p=(await r.json())[0];
-  perfilInfo.innerHTML=`
-    <strong>Email:</strong> ${p.email}<br>
-    <strong>CPF:</strong> ${p.cpf||"-"}<br>
-    <strong>WhatsApp:</strong> ${p.whatsapp||"-"}
-  `;
+  perfilInfo.innerHTML=`<strong>Email:</strong> ${p.email}`;
   perfilModal.style.display="flex";
 }
-function editarPerfil(){alert("Edição em breve 😉")}
-function logout(){
-  localStorage.removeItem("usuario_email");
-  location.replace("login.html");
-}
+function editarPerfil(){alert("Em breve 😉")}
+function logout(){localStorage.clear();location.replace("login.html")}
 
-/* QR */
-function gerarSlug(){return Math.random().toString(36).substring(2,10);}
+function gerarSlug(){return Math.random().toString(36).substring(2,10)}
 
 qrForm.onsubmit=async e=>{
   e.preventDefault();
   btnGerar.classList.add("loading");
-
   const slug=gerarSlug();
   const canvas=document.createElement("canvas");
   await QRCode.toCanvas(canvas,API_REDIRECT+slug,{width:512});
@@ -350,31 +358,46 @@ async function carregar(){
     REST_QR+"?email=eq."+encodeURIComponent(usuario)+"&ativo=eq.true&order=criado_em.desc",
     {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}}
   );
-  const json=await r.json();
-  dados=Array.isArray(json)?json:[];
+  dados=await r.json();
   render();
 }
 
 function render(){
   lista.innerHTML="";
-  const q=search.value.toLowerCase();
-  dados.filter(d=>d.nome.toLowerCase().includes(q)).forEach(qr=>{
+  dados.forEach(qr=>{
     lista.innerHTML+=`
     <div class="qr-card">
       <img src="${qr.imagem_url}">
       <strong>${qr.nome}</strong>
-      <div class="meta">
-        Destino: ${qr.destino}<br>
-        Slug: ${qr.slug}<br>
-        Acessos: ${qr.acessos}
-      </div>
+      <div class="meta">${qr.destino}</div>
       <div class="actions">
         <button class="open" onclick="window.open('${API_REDIRECT+qr.slug}')">Abrir</button>
-        <button class="copy" onclick="copyImg('${qr.imagem_url}')">Copiar</button>
+        <button class="edit" onclick="editar('${qr.id}','${qr.nome}','${qr.destino}')">Editar</button>
         <button class="del" onclick="excluir('${qr.id}')">Excluir</button>
       </div>
     </div>`;
   });
+}
+
+function editar(id,nome,dest){
+  editId=id;
+  editNome.value=nome;
+  editDestino.value=dest;
+  editModal.style.display="flex";
+}
+function fecharEdit(){editModal.style.display="none"}
+
+async function salvarEdit(){
+  await fetch(REST_QR+"?id=eq."+editId,{
+    method:"PATCH",
+    headers:{
+      apikey:API_KEY,
+      Authorization:"Bearer "+API_KEY,
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({nome:editNome.value,destino:editDestino.value})
+  });
+  fecharEdit();carregar();
 }
 
 async function excluir(id){
@@ -389,12 +412,6 @@ async function excluir(id){
     body:JSON.stringify({ativo:false})
   });
   carregar();
-}
-
-async function copyImg(url){
-  const b=await(await fetch(url)).blob();
-  await navigator.clipboard.write([new ClipboardItem({[b.type]:b})]);
-  alert("QR copiado!");
 }
 
 search.oninput=render;
