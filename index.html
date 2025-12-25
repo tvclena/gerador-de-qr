@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>CLENA QR • Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
@@ -88,9 +89,7 @@ form button{
   padding:16px;
   transition:.25s;
 }
-.qr-card:hover{
-  transform:scale(1.05);
-}
+.qr-card:hover{transform:scale(1.05)}
 .qr-card img{
   width:100%;
   border-radius:12px;
@@ -100,6 +99,8 @@ form button{
 .meta{
   font-size:13px;
   color:#94a3b8;
+  line-height:1.4;
+  word-break:break-all;
 }
 
 /* ACTIONS */
@@ -117,7 +118,8 @@ form button{
   cursor:pointer;
 }
 .open{background:#334155;color:#fff}
-.copy{background:#eab308}
+.copy{background:#eab308;color:#000}
+.edit{background:#22c55e;color:#000}
 .del{background:#e50914;color:#fff}
 
 @media(max-width:768px){
@@ -149,21 +151,27 @@ form button{
 </div>
 
 <script>
-const API_CREATE = "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
+/* CONFIG */
+const API_CREATE  = "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
 const API_REDIRECT = "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
-const REST_QR = "https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes";
-const API_KEY = "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
+const REST_QR     = "https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes";
+const API_KEY     = "sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
 
+/* DOM */
 const lista = document.getElementById("lista");
 const search = document.getElementById("search");
 const form = document.getElementById("qrForm");
+const nomeInput = document.getElementById("nome");
+const destinoInput = document.getElementById("destino");
 
 let dados=[];
 
+/* UTIL */
 function gerarSlug(){
   return Math.random().toString(36).substring(2,10);
 }
 
+/* GERAR */
 form.onsubmit = async e=>{
   e.preventDefault();
 
@@ -176,17 +184,20 @@ form.onsubmit = async e=>{
   await QRCode.toCanvas(canvas, API_REDIRECT + slug, { width:512 });
   const imagem = canvas.toDataURL("image/png");
 
-  await fetch(API_CREATE,{
+  const res = await fetch(API_CREATE,{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({ nome, slug, destino, imagem })
   });
+
+  if(!res.ok) return alert("Erro ao criar QR");
 
   nomeInput.value="";
   destinoInput.value="";
   carregar();
 };
 
+/* LISTAR */
 async function carregar(){
   const res = await fetch(
     REST_QR+"?ativo=eq.true&order=criado_em.desc",
@@ -196,6 +207,7 @@ async function carregar(){
   render();
 }
 
+/* RENDER */
 function render(){
   lista.innerHTML="";
   const q = search.value.toLowerCase();
@@ -203,50 +215,66 @@ function render(){
   dados.filter(d=>d.nome.toLowerCase().includes(q)).forEach(qr=>{
     lista.innerHTML += `
       <div class="qr-card">
-        <img src="${qr.imagem_url}" onerror="this.src='https://placehold.co/400x400?text=QR'">
+        <img src="${qr.imagem_url || ''}"
+             onerror="this.src='https://placehold.co/400x400?text=QR'">
+
         <strong>${qr.nome}</strong>
+
         <div class="meta">
+          <b>Destino:</b><br>${qr.destino}<br><br>
           Slug: ${qr.slug}<br>
           Acessos: ${qr.acessos}<br>
           ${new Date(qr.criado_em).toLocaleDateString("pt-BR")}
         </div>
+
         <div class="actions">
-          <button class="open" onclick="open('${qr.slug}')">Abrir</button>
-          <button class="copy" onclick="copyImg('${qr.imagem_url}')">Copiar</button>
-          <button class="del" onclick="del('${qr.id}')">Excluir</button>
+          <button class="open" onclick="abrir('${qr.slug}')">Abrir</button>
+          <button class="copy" onclick="copiar('${qr.imagem_url}')">Copiar</button>
+          <button class="edit" onclick="editar('${qr.id}','${qr.nome}','${qr.destino}')">Editar</button>
+          <button class="del" onclick="excluir('${qr.id}')">Excluir</button>
         </div>
       </div>`;
   });
 }
 
-function open(slug){
+/* AÇÕES */
+function abrir(slug){
   window.open(API_REDIRECT+slug);
 }
 
-async function copyImg(url){
+async function copiar(url){
   const b = await (await fetch(url)).blob();
   await navigator.clipboard.write([new ClipboardItem({[b.type]:b})]);
   alert("QR copiado!");
 }
 
-async function del(id){
+async function excluir(id){
   if(!confirm("Excluir QR?")) return;
   await fetch(REST_QR+"?id=eq."+id,{
     method:"PATCH",
-    headers:{
-      apikey:API_KEY,
-      "Content-Type":"application/json"
-    },
+    headers:{ apikey:API_KEY,"Content-Type":"application/json" },
     body:JSON.stringify({ativo:false})
   });
   carregar();
 }
 
+async function editar(id,nomeAtual,destinoAtual){
+  const novoNome = prompt("Editar nome:", nomeAtual);
+  if(!novoNome) return;
+
+  const novoDestino = prompt("Editar destino:", destinoAtual);
+  if(!novoDestino) return;
+
+  await fetch(REST_QR+"?id=eq."+id,{
+    method:"PATCH",
+    headers:{ apikey:API_KEY,"Content-Type":"application/json" },
+    body:JSON.stringify({ nome:novoNome, destino:novoDestino })
+  });
+
+  carregar();
+}
+
 search.oninput = render;
-
-const nomeInput = document.getElementById("nome");
-const destinoInput = document.getElementById("destino");
-
 carregar();
 </script>
 
