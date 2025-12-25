@@ -2,198 +2,216 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Gerador de QR Code • CLENA</title>
+<title>Gerador de QR Code</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
-:root{
-  --bg:#0f0f10;
-  --card:#1c1c1f;
-  --accent:#22c55e;
-  --danger:#ef4444;
-  --text:#fff;
-  --muted:#aaa;
-}
-*{box-sizing:border-box}
+*{box-sizing:border-box;font-family:Inter,Arial}
 body{
+  background:radial-gradient(circle at top,#0b132b,#000);
+  min-height:100vh;
   margin:0;
-  font-family:Inter,Arial;
-  background:linear-gradient(135deg,#050505,#0f0f10);
-  color:var(--text);
+  padding:30px;
+  color:#fff;
 }
-.container{
-  max-width:1100px;
-  margin:60px auto;
-  padding:20px;
+h1{text-align:center;margin-bottom:24px}
+
+.card{
+  max-width:980px;
+  margin:auto;
+  background:#0f172a;
+  border-radius:18px;
+  padding:28px;
+  box-shadow:0 0 40px rgba(0,0,0,.6);
 }
-h1{
-  font-size:28px;
-  margin-bottom:20px;
-}
-.form{
+
+form{
   display:grid;
   grid-template-columns:1fr 2fr auto;
   gap:12px;
   margin-bottom:30px;
 }
-input,button{
-  padding:14px;
+
+input{
+  padding:12px;
   border-radius:10px;
   border:none;
   font-size:15px;
 }
-input{
-  background:#222;
-  color:#fff;
-}
+
 button{
-  background:var(--accent);
+  padding:12px 18px;
+  border-radius:10px;
+  border:none;
+  background:#22c55e;
   color:#000;
   font-weight:700;
   cursor:pointer;
 }
+
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
   gap:20px;
 }
-.card{
-  background:var(--card);
-  border-radius:16px;
-  padding:16px;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
+
+.qr-card{
+  background:#020617;
+  border-radius:14px;
+  padding:14px;
+  transition:.25s;
 }
-.card img{
+.qr-card:hover{
+  transform:scale(1.04);
+}
+
+.qr-card img{
   width:100%;
-  border-radius:12px;
   background:#fff;
+  border-radius:10px;
+  margin-bottom:10px;
 }
+
+.qr-card h4{margin:6px 0}
 .meta{
   font-size:13px;
-  color:var(--muted);
+  color:#94a3b8;
+  margin-bottom:10px;
 }
+
 .actions{
   display:flex;
   gap:8px;
 }
 .actions button{
   flex:1;
+  padding:8px;
   font-size:13px;
-  padding:10px;
 }
-.btn-open{background:#3b82f6;color:#fff}
-.btn-copy{background:#eab308;color:#000}
-.btn-del{background:var(--danger);color:#fff}
+.btn-del{background:#e50914;color:#fff}
+.btn-open{background:#334155;color:#fff}
 </style>
 </head>
 
 <body>
-<div class="container">
-  <h1>📎 Gerador de QR Code</h1>
 
-  <div class="form">
+<h1>📲 Gerador de QR Code</h1>
+
+<div class="card">
+
+  <form id="qrForm">
     <input id="nome" placeholder="Nome do QR">
     <input id="destino" placeholder="URL de destino">
-    <button onclick="gerar()">Gerar</button>
-  </div>
+    <button type="submit">Gerar</button>
+  </form>
 
   <div class="grid" id="lista"></div>
+
 </div>
 
-<script src="env.js"></script>
 <script>
-const sb = supabase.createClient(
-  window.ENV.SUPABASE_URL,
-  window.ENV.SUPABASE_ANON_KEY
-)
+const API_CREATE =
+  "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
+const API_REDIRECT =
+  "https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
 
-const bucket = "qr-codes"
+const lista = document.getElementById("lista");
+const form = document.getElementById("qrForm");
 
-function slug(){
-  return Math.random().toString(36).substring(2,10)
+function gerarSlug(){
+  return Math.random().toString(36).substring(2,10);
 }
 
-async function gerar(){
-  const nome = nomeInput.value.trim()
-  const destino = destinoInput.value.trim()
-  if(!nome || !destino) return alert("Preencha tudo")
+form.addEventListener("submit", async e=>{
+  e.preventDefault();
 
-  const s = slug()
-  const urlQR = `${window.ENV.SUPABASE_URL}/functions/v1/r/${s}`
+  const nome = document.getElementById("nome").value.trim();
+  const destino = document.getElementById("destino").value.trim();
+  if(!nome || !destino) return alert("Preencha tudo");
 
-  const canvas = document.createElement("canvas")
-  await QRCode.toCanvas(canvas, urlQR, { width: 600 })
+  const slug = gerarSlug();
 
-  const blob = await new Promise(r => canvas.toBlob(r))
-  const fileName = `${nome.replace(/\s+/g,"_")}_${s}.png`
+  // gera QR em canvas
+  const canvas = document.createElement("canvas");
+  await QRCode.toCanvas(canvas, API_REDIRECT + slug, { width:512 });
 
-  await sb.storage.from(bucket).upload(fileName, blob, { upsert:true })
+  const imgBase64 = canvas.toDataURL("image/png");
 
-  const { data:img } = sb.storage.from(bucket).getPublicUrl(fileName)
+  const res = await fetch(API_CREATE,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ nome, slug, destino, image: imgBase64 })
+  });
 
-  await sb.from("qr_codes").insert({
-    nome,
-    slug: s,
-    destino,
-    imagem_url: img.publicUrl
-  })
+  if(!res.ok){
+    alert("Erro ao criar QR");
+    return;
+  }
 
-  carregar()
-}
+  document.getElementById("nome").value="";
+  document.getElementById("destino").value="";
+  carregar();
+});
 
 async function carregar(){
-  const { data } = await sb
-    .from("qr_codes")
-    .select("*")
-    .order("criado_em",{ascending:false})
+  const res = await fetch(
+    "https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes?ativo=eq.true&order=criado_em.desc",
+    {
+      headers:{
+        apikey:"sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o"
+      }
+    }
+  );
 
-  lista.innerHTML = ""
-  data.forEach(q => lista.innerHTML += card(q))
-}
+  const data = await res.json();
+  lista.innerHTML="";
 
-function card(q){
-  return `
-  <div class="card">
-    <img src="${q.imagem_url}">
-    <strong>${q.nome}</strong>
-    <div class="meta">
-      Slug: ${q.slug}<br>
-      Acessos: ${q.acessos}<br>
-      ${new Date(q.criado_em).toLocaleDateString("pt-BR")}
-    </div>
-    <div class="actions">
-      <button class="btn-open" onclick="window.open('${q.destino}')">Abrir</button>
-      <button class="btn-copy" onclick="copiar('${q.imagem_url}')">Copiar</button>
-      <button class="btn-del" onclick="excluir('${q.id}')">Excluir</button>
-    </div>
-  </div>`
-}
-
-async function copiar(url){
-  const res = await fetch(url)
-  const blob = await res.blob()
-  await navigator.clipboard.write([
-    new ClipboardItem({ [blob.type]: blob })
-  ])
-  alert("Imagem copiada!")
+  data.forEach(q=>{
+    lista.innerHTML += `
+      <div class="qr-card">
+        <img src="${q.imagem_url}">
+        <h4>${q.nome}</h4>
+        <div class="meta">
+          Slug: ${q.slug}<br>
+          Acessos: ${q.acessos}<br>
+          ${new Date(q.criado_em).toLocaleDateString("pt-BR")}
+        </div>
+        <div class="actions">
+          <button class="btn-open"
+            onclick="window.open('${API_REDIRECT + q.slug}')">
+            Abrir
+          </button>
+          <button class="btn-del"
+            onclick="excluir('${q.id}')">
+            Excluir
+          </button>
+        </div>
+      </div>
+    `;
+  });
 }
 
 async function excluir(id){
-  if(!confirm("Excluir QR?")) return
-  await sb.from("qr_codes").update({ativo:false}).eq("id",id)
-  carregar()
+  if(!confirm("Excluir QR?")) return;
+
+  await fetch(
+    "https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes?id=eq."+id,
+    {
+      method:"PATCH",
+      headers:{
+        apikey:"sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o",
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({ ativo:false })
+    }
+  );
+
+  carregar();
 }
 
-const nomeInput = document.getElementById("nome")
-const destinoInput = document.getElementById("destino")
-const lista = document.getElementById("lista")
-
-carregar()
+carregar();
 </script>
 </body>
 </html>
