@@ -31,7 +31,6 @@ body{
   display:none;
 }
 
-/* SPLASH */
 #splash{
   position:fixed;inset:0;
   background:var(--bg);
@@ -52,7 +51,6 @@ body{
   -webkit-text-fill-color:transparent;
 }
 
-/* HEADER */
 header{
   max-width:1200px;
   margin:24px auto;
@@ -60,17 +58,13 @@ header{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  gap:12px;
 }
-header h1{margin:0;font-size:26px;font-weight:900}
 
 .right{
   display:flex;
   gap:12px;
-  align-items:center;
 }
 
-/* SEARCH */
 .search{
   background:#020617;
   border-radius:999px;
@@ -81,11 +75,9 @@ header h1{margin:0;font-size:26px;font-weight:900}
   width:100%;
   background:none;
   border:none;
-  outline:none;
   color:#fff;
 }
 
-/* PROFILE */
 .profile-btn{
   width:42px;height:42px;
   border-radius:50%;
@@ -93,11 +85,9 @@ header h1{margin:0;font-size:26px;font-weight:900}
   display:flex;
   align-items:center;
   justify-content:center;
-  font-weight:900;
   cursor:pointer;
 }
 
-/* CARD */
 .card{
   max-width:1200px;
   margin:auto;
@@ -106,7 +96,6 @@ header h1{margin:0;font-size:26px;font-weight:900}
   border-radius:22px;
 }
 
-/* FORM */
 form{
   display:grid;
   grid-template-columns:1fr 2fr auto;
@@ -119,39 +108,21 @@ form input{
   border:none;
 }
 form button{
-  padding:14px 28px;
-  border-radius:12px;
+  padding:14px;
   border:none;
+  border-radius:12px;
   background:linear-gradient(135deg,var(--primary),var(--secondary));
+  color:#fff;
   font-weight:800;
   cursor:pointer;
-  position:relative;
-  color:#fff;
 }
 
-/* LOADING BUTTON */
-#btnGerar.loading{pointer-events:none;opacity:.8}
-.btn-spinner{
-  width:18px;height:18px;
-  border:3px solid rgba(255,255,255,.3);
-  border-top-color:#fff;
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-  display:none;
-  margin:auto;
-}
-#btnGerar.loading .btn-spinner{display:block}
-#btnGerar.loading .btn-text{display:none}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* GRID */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
   gap:22px;
 }
 
-/* QR CARD */
 .qr-card{
   background:#020617;
   border-radius:18px;
@@ -165,14 +136,12 @@ form button{
   background:#fff;
   margin-bottom:12px;
 }
+
 .meta{
   font-size:13px;
   color:var(--muted);
-  margin-bottom:12px;
-  line-height:1.5;
 }
 
-/* ACTIONS */
 .actions{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -190,47 +159,28 @@ form button{
 .edit{background:#22c55e;color:#000}
 .del{background:var(--danger);color:#fff}
 
-/* MODAL */
 .modal{
   position:fixed;inset:0;
   background:rgba(0,0,0,.6);
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:20;
 }
 .modal-box{
   background:var(--surface);
   padding:26px;
   border-radius:18px;
-  width:92%;
+  width:90%;
   max-width:420px;
 }
-.modal-box h3{margin-top:0}
 .modal-box input{
   width:100%;
   padding:12px;
-  border-radius:10px;
-  border:none;
-  margin-bottom:12px;
-}
-.modal-actions{
-  display:flex;
-  gap:10px;
-}
-.modal-actions button{
-  flex:1;
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  font-weight:800;
-  cursor:pointer;
+  margin-bottom:10px;
 }
 
-/* MOBILE */
 @media(max-width:768px){
   form{grid-template-columns:1fr}
-  .search{width:100%}
 }
 </style>
 </head>
@@ -242,63 +192,44 @@ form button{
 </div>
 
 <header>
-  <h1>CLENA <span style="color:var(--primary)">QR</span></h1>
+  <h1>CLENA QR</h1>
   <div class="right">
-    <div class="search"><input id="search" placeholder="Buscar QR…"></div>
+    <div class="search"><input id="search" placeholder="Buscar"></div>
     <div class="profile-btn" onclick="abrirPerfil()">👤</div>
   </div>
 </header>
 
 <div class="card">
 <form id="qrForm">
-  <input id="nome" placeholder="Nome do QR" required>
-  <input id="destino" placeholder="URL de destino" required>
-  <button id="btnGerar">
-    <span class="btn-text">Gerar</span>
-    <span class="btn-spinner"></span>
-  </button>
+  <input id="nome" placeholder="Nome" required>
+  <input id="destino" placeholder="URL destino" required>
+  <button>Gerar</button>
 </form>
 
 <div class="grid" id="lista"></div>
 </div>
 
-<!-- PERFIL -->
 <div class="modal" id="perfilModal">
   <div class="modal-box">
-    <h3>Meu perfil</h3>
-    <div id="perfilInfo" class="meta"></div>
-    <div class="modal-actions">
-      <button onclick="fecharPerfil()">Fechar</button>
-      <button style="background:var(--danger)" onclick="logout()">Sair</button>
-    </div>
+    <h3>Modo Público</h3>
+    <p>Sem login ativo</p>
+    <button onclick="perfilModal.style.display='none'">Fechar</button>
   </div>
 </div>
 
-<!-- EDITAR QR -->
 <div class="modal" id="editModal">
   <div class="modal-box">
-    <h3>Editar QR</h3>
-    <input id="editNome" placeholder="Nome">
-    <input id="editDestino" placeholder="Destino">
-    <div class="modal-actions">
-      <button onclick="fecharEdit()">Cancelar</button>
-      <button style="background:var(--success)" onclick="salvarEdit()">Salvar</button>
-    </div>
+    <h3>Editar</h3>
+    <input id="editNome">
+    <input id="editDestino">
+    <button onclick="salvarEdit()">Salvar</button>
   </div>
 </div>
 
 <script>
-const usuario = "admin@clena.com"; // fixo (ou qualquer valor)
-
-setTimeout(()=>{
-  splash.style.display="none";
-  document.body.style.display="block";
-},1200);
-
 const API_CREATE="https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/create";
 const API_REDIRECT="https://fcehmjmtxqmrjkuqlkay.supabase.co/functions/v1/r/";
 const REST_QR="https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/qr_codes";
-const REST_USERS="https://fcehmjmtxqmrjkuqlkay.supabase.co/rest/v1/usuarios";
 const API_KEY="sb_publishable_iCDWHsq6EguNauQPP49JCg_jUNcz30o";
 
 let dados=[], editId=null;
@@ -307,26 +238,12 @@ function gerarSlug(){
   return Math.random().toString(36).substring(2,10);
 }
 
-/* PERFIL */
-async function abrirPerfil(){
-  const r = await fetch(
-    REST_USERS+"?email=eq."+encodeURIComponent(usuario),
-    {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}}
-  );
-  const p = (await r.json())[0];
-  perfilInfo.innerHTML = `<strong>Email:</strong> ${p.email}`;
+function abrirPerfil(){
   perfilModal.style.display="flex";
 }
-function fecharPerfil(){perfilModal.style.display="none";}
-function logout(){
-  localStorage.clear();
-  location.replace("login.html");
-}
 
-/* GERAR */
 qrForm.onsubmit = async e=>{
   e.preventDefault();
-  btnGerar.classList.add("loading");
 
   const slug = gerarSlug();
   const canvas = document.createElement("canvas");
@@ -340,20 +257,18 @@ qrForm.onsubmit = async e=>{
       slug,
       destino:destino.value,
       imagem:canvas.toDataURL("image/png"),
-      email:usuario
+      email:"publico"
     })
   });
 
   nome.value="";
   destino.value="";
-  await carregar();
-  btnGerar.classList.remove("loading");
+  carregar();
 };
 
-/* LISTAR */
 async function carregar(){
   const r = await fetch(
-    REST_QR+"?email=eq."+encodeURIComponent(usuario)+"&ativo=eq.true&order=criado_em.desc",
+    REST_QR+"?ativo=eq.true&order=criado_em.desc",
     {headers:{apikey:API_KEY,Authorization:"Bearer "+API_KEY}}
   );
   dados = await r.json();
@@ -370,7 +285,6 @@ function render(){
       <strong>${qr.nome}</strong>
       <div class="meta">
         ${qr.destino}<br>
-        Slug: ${qr.slug}<br>
         Acessos: ${qr.acessos}
       </div>
       <div class="actions">
@@ -382,14 +296,12 @@ function render(){
   });
 }
 
-/* EDITAR */
 function editar(id,nome,dest){
   editId=id;
   editNome.value=nome;
   editDestino.value=dest;
   editModal.style.display="flex";
 }
-function fecharEdit(){editModal.style.display="none";}
 
 async function salvarEdit(){
   await fetch(REST_QR+"?id=eq."+editId,{
@@ -404,11 +316,10 @@ async function salvarEdit(){
       destino:editDestino.value
     })
   });
-  fecharEdit();
+  editModal.style.display="none";
   carregar();
 }
 
-/* EXCLUIR */
 async function excluir(id){
   if(!confirm("Excluir QR?")) return;
   await fetch(REST_QR+"?id=eq."+id,{
@@ -424,6 +335,12 @@ async function excluir(id){
 }
 
 search.oninput=render;
+
+setTimeout(()=>{
+  splash.style.display="none";
+  document.body.style.display="block";
+},800);
+
 carregar();
 </script>
 
